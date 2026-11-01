@@ -1,160 +1,205 @@
 # MoonWasm FuelGuard
 
+[![Status: pre-review](https://img.shields.io/badge/status-pre--review-f59e0b?style=flat-square)](#current-status)
+[![Scope: fuel-only](https://img.shields.io/badge/scope-fuel--only-2563eb?style=flat-square)](#current-status)
+[![Target: wasm](https://img.shields.io/badge/target-wasm-7c3aed?style=flat-square)](#current-status)
+[![MoonBit](https://img.shields.io/badge/MoonBit-0.1.20261016-111827?style=flat-square)](https://www.moonbitlang.com/)
+[![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-16a34a?style=flat-square)](LICENSE)
+
 Build-time fuel metering and resource guards for MoonBit WebAssembly modules.
 
-- Product name: MoonWasm Instrument
-- Repository: `moonwasm-fuelguard`
-- License: Apache-2.0
-- Status: fuel-only build-time instrumentation; GuardPass and the wasmoon adapter are not implemented yet
+MoonWasm FuelGuard instruments a normal `moon build --target wasm` module with a
+fixed execution budget. Function entries and loop bodies consume fuel, and an
+exhausted budget traps deterministically at a reproducible point. Instrumentation
+adds no imports and requires no host-side fuel API.
 
-MoonWasm FuelGuard is designed to make a standard MoonBit `--target wasm` module carry its own execution budget. Instrumentation adds no imports, writes a fixed fuel budget at build time, traps deterministically when fuel or resource limits are exhausted, and exposes a readable trap code through `__moonwasm_trap_code`.
+> FuelGuard is a resource-control tool, not a security sandbox. It does not limit
+> host imports, wall-clock time, or file and network access.
 
-## Project status
+## Why FuelGuard
+
+MoonBit's primary runtime artifact is WebAssembly, but the MoonBit toolchain and
+the current MoonBit hosts do not provide a portable instruction budget:
+
+- `moon test` has no fuel or timeout option, so a runaway wasm test can stall CI.
+- `moon_cove` reports source coverage; it does not impose an execution budget.
+- wasm5 has no fuel support, and wasmoon's `fuel`/`budget` options are not implemented.
+- Rust/C++ instrumentation tools cannot be embedded cleanly in a MoonBit build.
+
+FuelGuard moves the budget into the module at build time. A host only needs to load
+and run the instrumented wasm; it does not need to implement fuel accounting.
+The goal is a portable, reproducible runtime contract, not a gas model identical
+to Wasmtime.
+
+## Current status
 
 | Area | Status |
 | --- | --- |
-| Core API and package boundaries | Implemented |
-| Input policy | Multiple memories/tables, GC types, and reserved exports rejected |
-| Pass pipeline | Fixed Fuel → Guard order, validation after every pass |
+| Input policy | Rejects GC types, multiple memories/tables, and reserved exports |
 | Decode / validate / encode | Implemented with staged errors |
-| FuelPass | Implemented: entry and loop body charges, deterministic fuel trap |
-| GuardPass | Disabled by default; configured guards are rejected as not implemented |
-| `cmd/instrument` | Fuel-only file pipeline, moonx-compatible wasm entry |
-| `cmd/run` | Scaffold, Linux-native entry only |
-| wasmoon adapter | Not implemented |
-| Differential corpus and benchmarks | Not started |
+| Pass API and pipeline | Fixed validation pipeline; third-party passes can be inserted |
+| FuelPass | Implemented for function entries and loop bodies |
+| `instrument` CLI | Implemented as a wasm-compatible, moonx-ready file pipeline |
+| Real MoonBit fixture | Built, instrumented, and checked end to end |
+| GuardPass | No-op without guard config; configured guards rejected explicitly |
+| Native `run` adapter | Scaffold only |
+| Runtime trap execution | Not verified until the wasmoon adapter lands |
+| Differential corpus and benchmark | Not started |
+| mooncakes release | Not published |
 
-This repository is honest about its state: instrumentation meters fuel only, and no runtime execution has been validated through wasmoon.
+## Quick start
 
-## Fuel-only usage
+Requirements: MoonBit `0.1.20261016` or compatible, Git, and a POSIX shell.
 
-```text
-moon run cmd/instrument --target wasm -- <in.wasm> -o <out.wasm> --fuel <N> \
-  [--max-memory-pages <N>] [--max-table-elements <N>] [--allow-import <module.name>]...
+```bash
+git clone https://github.com/Atman-Angle/moonwasm-fuelguard.git
+cd moonwasm-fuelguard
+
+moon check --target wasm --deny-warn
+moon test --target wasm
 ```
 
-Current behavior:
+Instrument the included real MoonBit fixture:
 
-- Reads and decodes the input, runs the input policy, then applies `FuelPass`.
-- Charges 1 unit at every defined function entry and every loop body start.
-- Appends a mutable `i32` fuel global and a mutable `i32` trap code global, exporting the latter as `__moonwasm_trap_code`.
-- Traps with code `1` when the remaining fuel becomes negative.
-- Validates after each pass and again before encoding; the output file is written only after encoding succeeds.
-- Exits `2` without writing a file on decode, policy, validation, encode, or option errors.
-- Rejects any guard option (`--max-memory-pages`, `--max-table-elements`, `--allow-import`) with a not-implemented error.
+```bash
+moon run cmd/instrument --target wasm -- \
+  fixtures/hello/hello.wasm \
+  -o _build/hello.fuel.wasm \
+  --fuel 100000
+```
 
-Not implemented yet: memory/table growth guards, import allowlists, the native `run` adapter, runtime trap execution, differential corpus, and benchmarks.
-
-## CLI split
-
-`moonx` runs wasm packages, while wasmoon is native-only. A single moonx CLI therefore cannot provide both `instrument` and `run`.
-
-- `cmd/instrument` is the wasm-compatible, moonx-distributed instrumentation entry.
-- `cmd/run` is a native Linux entry that will own the wasmoon adapter.
-- Both entries share the host-independent core package.
-
-Local entry points:
+Expected output shape:
 
 ```text
+instrumented fixtures/hello/hello.wasm -> _build/hello.fuel.wasm
+  input=fixtures/hello/hello.wasm output=_build/hello.fuel.wasm fuel=100000
+  passes: FuelPass, GuardPass
+  note: fuel: budget=100000 functions=43 loops=21
+  note: guard: disabled (no memory, table, or import limits configured)
+  output bytes: 6862
+```
+
+Run the quality checks:
+
+```bash
+bash fixtures/hello/build.sh
+bash scripts/check-e2e.sh
+bash scripts/check-cli-failures.sh
+```
+
+Guard options such as `--max-memory-pages` are parsed, but currently rejected with
+exit code `2` until GuardPass is implemented. No output file is written on failure.
+
+## How it works
+
+Current fuel-only pipeline:
+
+```mermaid
+flowchart LR
+    input["Input .wasm"] --> decode["Decode + input policy"]
+    decode --> fuel["FuelPass"]
+    fuel --> validate["Validate"]
+    validate --> encode["Encode"]
+    encode --> output["Output .wasm"]
+```
+
+Core invariants:
+
+- Instrumentation never adds imports.
+- Fuel is fixed at instrumentation time; there is no runtime setter.
+- Every pass output is validated; the module is validated again before encoding.
+- FuelPass runs before GuardPass.
+- Existing function, global, type, and export indexes are preserved.
+- Unsupported inputs fail explicitly; the CLI does not write partial output.
+
+The diagnostic export is `__moonwasm_trap_code`. Trap code `1` means fuel exhaustion;
+codes `2` and `3` are reserved for memory and table guards.
+
+## CLI layout
+
+`moonx` runs wasm packages, while wasmoon is native-only. The CLI is therefore split:
+
+| Entry | Target | Responsibility |
+| --- | --- | --- |
+| `cmd/instrument` | wasm | File pipeline, moonx-compatible instrumentation |
+| `cmd/run` | Linux native | wasmoon execution and trap reporting |
+
+```bash
 moon run cmd/instrument --target wasm -- --help
-moon run cmd/run --target native -- --help
+moon run cmd/run --target native -- --help   # Linux only
 ```
 
-The `run` entry requires a Linux environment; Windows native builds are out of scope. After publishing, the instrumentation entry is intended to run as:
-
-```text
-moonx Atman-Angle/moonwasm-fuelguard/cmd/instrument --help
-```
+The native runner is currently a scaffold. Linux/WSL is the only planned runtime
+environment; Windows native and wasm5 are out of scope.
 
 ## Repository layout
 
 ```text
 .
 ├── cmd/
-│   ├── instrument/        # wasm + moonx entry (cli, file pipeline)
-│   └── run/               # native Linux entry
+│   ├── instrument/        # wasm + moonx instrumentation entry
+│   └── run/               # Linux native runner entry
 ├── runner/                # trap diagnosis and future wasmoon adapter
-├── fixtures/hello/        # real MoonBit wasm fixture and build script
-├── scripts/               # end-to-end and failure-path checks
-├── docs/                  # requirements and architecture
-├── config.mbt             # typed instrumentation configuration
-├── instrument_error.mbt   # staged errors
-├── pass.mbt               # public Pass and PassResult
-├── pipeline.mbt           # fixed validation pipeline
-├── policy.mbt             # input rejection rules
-├── codec.mbt              # decode / validate / encode wrappers
+├── fixtures/hello/        # real MoonBit wasm fixture
+├── scripts/               # e2e and CLI failure checks
+├── docs/                  # requirements, architecture, task breakdown
 ├── ast.mbt                # private AST traversal helpers
-├── fuel_state.mbt         # fuel and trap code globals
+├── fuel_state.mbt         # fuel and trap-code globals
 ├── fuel_pass.mbt          # fuel metering pass
 ├── builtin_passes.mbt     # FuelPass and GuardPass wiring
-└── trap.mbt               # trap code model
+└── pipeline.mbt           # fixed validation pipeline
 ```
 
 ## Development
 
-Prerequisites:
-
-- MoonBit `0.1.20261016` or compatible
-- starshine `0.3.0`
-- Linux or WSL for the native `run` adapter
-
-Check and test the portable core:
-
-```bash
-moon check --target wasm --deny-warn
-moon test --target wasm
-```
-
-Format and refresh interfaces after changes:
+Before submitting changes:
 
 ```bash
 moon info
 moon fmt
+moon check --target wasm --deny-warn
+moon test --target wasm
+moon fmt --check
 ```
 
-End-to-end checks against the real MoonBit fixture:
+The wasm suite currently covers configuration, input policy, AST rewriting, fuel
+injection, determinism, and CLI failure behavior. The end-to-end scripts exercise
+a real MoonBit `--target wasm` artifact.
 
-```bash
-bash scripts/check-e2e.sh
-bash scripts/check-cli-failures.sh
-```
-
-`fixtures/hello` is an independent MoonBit module; rebuild its wasm with `bash fixtures/hello/build.sh`. The e2e script rebuilds it, instruments it twice, and asserts identical output bytes plus the presence of the trap code export. The failure-path script covers missing input, missing `--fuel`, invalid limits, undecodable input, rejected guard configuration, and output preservation on failure.
-
-Windows native tests are not supported: starshine's native trace backend uses `gettimeofday`, which is unavailable in the current MSVC environment.
+Windows native tests are not supported: starshine's native trace backend uses
+`gettimeofday`, which is unavailable in the current MSVC environment.
 
 ## Limitations
 
-- Only fuel metering is implemented. Memory/table growth guards and import allowlists are rejected, not silently ignored.
-- No runtime execution is verified: the wasmoon runner is not implemented, so fuel traps have not been observed at runtime.
-- Windows native, wasm-gc, component model, multiple memories/tables, and multiple modules are out of scope; such inputs are rejected.
-- There is no differential corpus, performance benchmark, or mooncakes release yet.
-
-## Next steps
-
-1. Implement GuardPass for memory/table growth and import allowlists.
-2. Add the Linux wasmoon runner and verify fuel trap code `1` at runtime.
-3. Build the deterministic differential corpus and the three fuel-only benchmarks.
-4. Publish to mooncakes and validate the moonx entry.
-
-## Architecture
-
-The authoritative design is [docs/06_架构设计_MoonWasm_Instrument.md](docs/06_架构设计_MoonWasm_Instrument.md), including component, pipeline, fuel, guard, and run-flow diagrams.
-
-Key invariants:
-
-- Instrumentation adds no imports.
-- Every pass is followed by starshine validation.
-- Encoding validates again.
-- FuelPass runs before GuardPass.
-- The diagnostic export name is reserved.
-- wasm-gc, component model, and multiple memories/tables are rejected.
-- Windows native and wasm5 are out of scope.
+- Only fuel metering is implemented. GuardPass and import allowlisting are planned.
+- The wasmoon runner is not implemented, so runtime trap behavior is not yet verified.
+- There is no differential corpus, performance benchmark, or public package release.
+- The tool does not provide instruction-level gas equivalence with Wasmtime.
+- The tool is not a sandbox and does not protect against malicious host imports.
 
 ## Roadmap
 
-1. ~~Implement FuelPass and its unit tests.~~ (fuel-only instrumentation implemented)
-2. Implement GuardPass and import allowlisting.
-3. Add the Linux wasmoon adapter and CI trap demo.
-4. Add the deterministic differential corpus and performance benchmark.
-5. Publish to mooncakes and tag the first functional release.
+- [x] Input policy, Pass API, validation pipeline, and FuelPass
+- [x] Fuel-only `instrument` CLI and real MoonBit fixture
+- [ ] Memory and table growth guards
+- [ ] Import allowlisting and guard diagnostics
+- [ ] Linux wasmoon runner and CI trap demo
+- [ ] 30+ deterministic differential cases and 10 control-flow boundaries
+- [ ] Fuel overhead and module-size benchmark
+- [ ] mooncakes release and moonx verification
+
+## Documentation
+
+- [Requirements](docs/05_需求定稿_MoonWasm_Instrument.md)
+- [Architecture](docs/06_架构设计_MoonWasm_Instrument.md)
+- [Task breakdown](docs/07_任务分片_MoonWasm_Instrument.md)
+
+## License
+
+Apache-2.0. See [LICENSE](LICENSE), [NOTICE](NOTICE), and [THIRD_PARTY.md](THIRD_PARTY.md).
+
+The project references the instrumentation ideas of
+[paritytech/wasm-instrument](https://github.com/paritytech/wasm-instrument),
+[Binaryen](https://github.com/WebAssembly/binaryen), and Wasmtime/Wasmer without
+copying their code. Parsing, validation, and encoding are provided by
+[starshine](https://github.com/jtenner/starshine-mb).
