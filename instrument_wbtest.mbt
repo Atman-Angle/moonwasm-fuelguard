@@ -467,3 +467,140 @@ test "local counts are zero for missing functions" {
   assert_eq(function_body_local_count(@lib.Module::new(), 0), 0)
   assert_eq(function_body_local_count(function_module([], [], []), 3), 0)
 }
+
+///|
+test "fuel state appends mutable i32 globals with configured budget" {
+  let state = add_fuel_state(@lib.Module::new(), 100).unwrap()
+  let @lib.GlobalSec(globals) = state.wasm_module.global_sec.unwrap()
+  assert_eq(globals.length(), 2)
+  let @lib.Global(
+    @lib.GlobalType(fuel_type, fuel_mutable),
+    @lib.Expr(fuel_init)
+  ) = globals[0]
+  assert_eq(fuel_type, @lib.ValType::i32())
+  assert_true(fuel_mutable)
+  assert_eq(fuel_init, [@lib.Instruction::i32_const(@lib.I32::new(100))])
+  let @lib.Global(
+    @lib.GlobalType(trap_type, trap_mutable),
+    @lib.Expr(trap_init)
+  ) = globals[1]
+  assert_eq(trap_type, @lib.ValType::i32())
+  assert_true(trap_mutable)
+  assert_eq(trap_init, [@lib.Instruction::i32_const(@lib.I32::new(0))])
+  assert_eq(state.fuel_global, @lib.GlobalIdx::new(0U))
+  assert_eq(state.trap_global, @lib.GlobalIdx::new(1U))
+}
+
+///|
+test "fuel state exports the trap code global under the reserved name" {
+  let state = add_fuel_state(@lib.Module::new(), 10).unwrap()
+  let @lib.ExportSec(exports) = state.wasm_module.export_sec.unwrap()
+  assert_eq(exports.length(), 1)
+  let @lib.Export(name, index) = exports[0]
+  assert_eq(name, @lib.Name::from_string(trap_export_name))
+  let global = match index {
+    @lib.GlobalExternIdx(global) => global
+    _ => abort("expected a global export")
+  }
+  assert_eq(global, @lib.GlobalIdx::new(1U))
+}
+
+///|
+test "fuel state output passes validation" {
+  let state = add_fuel_state(@lib.Module::new(), 10).unwrap()
+  assert_true(validate_wasm(state.wasm_module, "test") is Ok(_))
+}
+
+///|
+test "fuel state rejects an existing reserved export" {
+  let wasm_module = @lib.Module::new(
+    export_sec=Some(
+      @lib.ExportSec::new([
+        @lib.Export::new(
+          @lib.Name::from_string(trap_export_name),
+          @lib.ExternIdx::global(@lib.GlobalIdx::new(0U)),
+        ),
+      ]),
+    ),
+  )
+  assert_true(add_fuel_state(wasm_module, 10) is Err(ExportNameConflict(_)))
+}
+
+///|
+test "fuel state indices account for imported globals" {
+  let wasm_module = @lib.Module::new(
+    import_sec=Some(
+      @lib.ImportSec::new([
+        @lib.Import::new(
+          @lib.Name::from_string("env"),
+          @lib.Name::from_string("g"),
+          @lib.ExternType::global(
+            @lib.GlobalType::new(@lib.ValType::i32(), false),
+          ),
+        ),
+      ]),
+    ),
+  )
+  let state = add_fuel_state(wasm_module, 10).unwrap()
+  assert_eq(state.fuel_global, @lib.GlobalIdx::new(1U))
+  assert_eq(state.trap_global, @lib.GlobalIdx::new(2U))
+  let @lib.ExportSec(exports) = state.wasm_module.export_sec.unwrap()
+  let @lib.Export(_, index) = exports[0]
+  let global = match index {
+    @lib.GlobalExternIdx(global) => global
+    _ => abort("expected a global export")
+  }
+  assert_eq(global, @lib.GlobalIdx::new(2U))
+  let @lib.GlobalSec(globals) = state.wasm_module.global_sec.unwrap()
+  assert_eq(globals.length(), 2)
+  assert_true(validate_wasm(state.wasm_module, "test") is Ok(_))
+}
+
+///|
+test "fuel state keeps existing globals and exports" {
+  let wasm_module = @lib.Module::new(
+    global_sec=Some(
+      @lib.GlobalSec::new([
+        @lib.Global::new(
+          @lib.GlobalType::new(@lib.ValType::i32(), false),
+          @lib.Expr::new([@lib.Instruction::i32_const(@lib.I32::new(5))]),
+        ),
+      ]),
+    ),
+    export_sec=Some(
+      @lib.ExportSec::new([
+        @lib.Export::new(
+          @lib.Name::from_string("answer"),
+          @lib.ExternIdx::global(@lib.GlobalIdx::new(0U)),
+        ),
+      ]),
+    ),
+  )
+  let state = add_fuel_state(wasm_module, 42).unwrap()
+  assert_eq(state.fuel_global, @lib.GlobalIdx::new(1U))
+  assert_eq(state.trap_global, @lib.GlobalIdx::new(2U))
+  let @lib.GlobalSec(globals) = state.wasm_module.global_sec.unwrap()
+  assert_eq(globals.length(), 3)
+  let @lib.ExportSec(exports) = state.wasm_module.export_sec.unwrap()
+  assert_eq(exports.length(), 2)
+  assert_true(has_export(state.wasm_module, "answer"))
+  assert_true(has_export(state.wasm_module, trap_export_name))
+}
+
+///|
+test "fuel state leaves the source module unchanged" {
+  let wasm_module = @lib.Module::new(
+    global_sec=Some(
+      @lib.GlobalSec::new([
+        @lib.Global::new(
+          @lib.GlobalType::new(@lib.ValType::i32(), false),
+          @lib.Expr::new([@lib.Instruction::i32_const(@lib.I32::new(5))]),
+        ),
+      ]),
+    ),
+  )
+  let _ = add_fuel_state(wasm_module, 10).unwrap()
+  let @lib.GlobalSec(source_globals) = wasm_module.global_sec.unwrap()
+  assert_eq(source_globals.length(), 1)
+  assert_true(wasm_module.export_sec is None)
+}
