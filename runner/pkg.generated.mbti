@@ -1,0 +1,33 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "Atman-Angle/moonwasm-fuelguard/runner"
+
+import {
+  "Atman-Angle/moonwasm-fuelguard",
+}
+
+// Values
+pub fn diagnose_trap_code(Int32) -> Result[RunFailure, @moonwasm-fuelguard.InstrumentError]
+
+// Errors
+
+// Types and methods
+pub enum RunFailure {
+  Trap(@moonwasm-fuelguard.TrapCode)
+  ModuleTrap
+  HostError(String)
+  InputError(String)
+}
+pub fn RunFailure::describe(Self) -> String
+pub fn RunFailure::exit_code(Self) -> Int32
+pub fn RunFailure::host_error(String) -> Self
+pub fn RunFailure::input_error(String) -> Self
+
+pub struct RunOptions {
+  invoke : String?
+}
+pub fn RunOptions::invoke(Self) -> String?
+pub fn RunOptions::new(invoke? : String?) -> Self
+
+// Type aliases
+
+// Traits

@@ -1,0 +1,6 @@
+import {
+  "Atman-Angle/moonwasm-fuelguard" @core,
+  "moonbitlang/core/env",
+}
+
+pkgtype(kind: "executable")

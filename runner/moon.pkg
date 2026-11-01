@@ -1,0 +1,3 @@
+import {
+  "Atman-Angle/moonwasm-fuelguard" @instrument,
+}

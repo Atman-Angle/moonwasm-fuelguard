@@ -1,0 +1,106 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "Atman-Angle/moonwasm-fuelguard"
+
+import {
+  "jtenner/starshine/lib",
+}
+
+// Values
+pub fn check_input(@lib.Module) -> Result[Unit, InstrumentError]
+
+pub fn decode_checked(Bytes) -> Result[@lib.Module, InstrumentError]
+
+pub fn decode_wasm(Bytes) -> Result[@lib.Module, InstrumentError]
+
+pub fn encode_wasm(@lib.Module) -> Result[Bytes, InstrumentError]
+
+pub let trap_export_name : String
+
+pub fn validate_wasm(@lib.Module, String) -> Result[Unit, InstrumentError]
+
+// Errors
+
+// Types and methods
+pub struct FuelConfig {
+  budget : Int32
+}
+pub fn FuelConfig::budget(Self) -> Int32
+pub fn FuelConfig::new(Int32) -> Result[Self, InstrumentError]
+
+pub struct FuelPass {
+  config : FuelConfig
+}
+pub fn FuelPass::config(Self) -> FuelConfig
+pub fn FuelPass::new(FuelConfig) -> Self
+
+pub struct GuardConfig {
+  max_memory_pages : Int32?
+  max_table_elements : Int32?
+  allowed_imports : Array[String]
+}
+pub fn GuardConfig::allowed_imports(Self) -> Array[String]
+pub fn GuardConfig::max_memory_pages(Self) -> Int32?
+pub fn GuardConfig::max_table_elements(Self) -> Int32?
+pub fn GuardConfig::new(max_memory_pages? : Int32?, max_table_elements? : Int32?, allowed_imports? : Array[String]) -> Result[Self, InstrumentError]
+
+pub struct GuardPass {
+  config : GuardConfig
+}
+pub fn GuardPass::config(Self) -> GuardConfig
+pub fn GuardPass::new(GuardConfig) -> Self
+
+pub struct InstrumentConfig {
+  fuel : FuelConfig
+  guard_config : GuardConfig
+}
+pub fn InstrumentConfig::fuel(Self) -> FuelConfig
+pub fn InstrumentConfig::guard_config(Self) -> GuardConfig
+pub fn InstrumentConfig::new(FuelConfig, GuardConfig) -> Self
+
+pub enum InstrumentError {
+  InvalidFuelBudget(Int32)
+  InvalidMemoryLimit(Int32)
+  InvalidTableLimit(Int32)
+  DecodeFailed(String)
+  EncodeFailed(String)
+  ValidationFailed(String, String)
+  UnsupportedFeature(String)
+  ExportNameConflict(String)
+  InvalidTrapCode(Int32)
+  NotImplemented(String)
+}
+pub fn InstrumentError::message(Self) -> String
+
+pub struct PassResult {
+  pass_name : String
+  output : @lib.Module
+  notes : Array[String]
+}
+pub fn PassResult::new(String, @lib.Module, notes? : Array[String]) -> Self
+pub fn PassResult::notes(Self) -> Array[String]
+pub fn PassResult::output(Self) -> @lib.Module
+pub fn PassResult::pass_name(Self) -> String
+
+pub struct Pipeline {
+  passes : Array[&Pass]
+}
+pub fn Pipeline::builtin(InstrumentConfig) -> Self
+pub fn Pipeline::new(Array[&Pass]) -> Self
+pub fn Pipeline::run(Self, @lib.Module) -> Result[PassResult, InstrumentError]
+
+pub enum TrapCode {
+  NoTrap
+  Fuel
+  Memory
+  Table
+}
+pub fn TrapCode::from_code(Int32) -> Result[Self, InstrumentError]
+pub fn TrapCode::message(Self) -> String
+pub fn TrapCode::to_code(Self) -> Int32
+
+// Type aliases
+
+// Traits
+pub(open) trait Pass {
+  fn apply(Self, @lib.Module) -> Result[PassResult, InstrumentError]
+}
