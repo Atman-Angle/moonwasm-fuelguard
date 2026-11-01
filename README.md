@@ -74,6 +74,8 @@ moonx Atman-Angle/moonwasm-fuelguard/cmd/instrument --help
 │   ├── instrument/        # wasm + moonx entry (cli, file pipeline)
 │   └── run/               # native Linux entry
 ├── runner/                # trap diagnosis and future wasmoon adapter
+├── fixtures/hello/        # real MoonBit wasm fixture and build script
+├── scripts/               # end-to-end and failure-path checks
 ├── docs/                  # requirements and architecture
 ├── config.mbt             # typed instrumentation configuration
 ├── instrument_error.mbt   # staged errors
@@ -110,7 +112,30 @@ moon info
 moon fmt
 ```
 
+End-to-end checks against the real MoonBit fixture:
+
+```bash
+bash scripts/check-e2e.sh
+bash scripts/check-cli-failures.sh
+```
+
+`fixtures/hello` is an independent MoonBit module; rebuild its wasm with `bash fixtures/hello/build.sh`. The e2e script rebuilds it, instruments it twice, and asserts identical output bytes plus the presence of the trap code export. The failure-path script covers missing input, missing `--fuel`, invalid limits, undecodable input, rejected guard configuration, and output preservation on failure.
+
 Windows native tests are not supported: starshine's native trace backend uses `gettimeofday`, which is unavailable in the current MSVC environment.
+
+## Limitations
+
+- Only fuel metering is implemented. Memory/table growth guards and import allowlists are rejected, not silently ignored.
+- No runtime execution is verified: the wasmoon runner is not implemented, so fuel traps have not been observed at runtime.
+- Windows native, wasm-gc, component model, multiple memories/tables, and multiple modules are out of scope; such inputs are rejected.
+- There is no differential corpus, performance benchmark, or mooncakes release yet.
+
+## Next steps
+
+1. Implement GuardPass for memory/table growth and import allowlists.
+2. Add the Linux wasmoon runner and verify fuel trap code `1` at runtime.
+3. Build the deterministic differential corpus and the three fuel-only benchmarks.
+4. Publish to mooncakes and validate the moonx entry.
 
 ## Architecture
 
