@@ -9,7 +9,9 @@ fn print_usage() -> Unit {
   println("             [--allow-import <module.name>]...")
   println("")
   println("Diagnostic export: \{@core.trap_export_name}")
-  println("Status: scaffold only; FuelPass and GuardPass are not implemented.")
+  println(
+    "Status: fuel metering core is implemented; the file pipeline is not wired yet.",
+  )
 }
 
 ///|
@@ -27,12 +29,20 @@ fn main_impl(args : Array[String]) -> Int32 {
       println("0.1.0")
       0
     }
-    _ => {
-      println(
-        "instrument: scaffold only; use --help for the target CLI contract",
-      )
-      2
-    }
+    _ =>
+      match parse_args(args) {
+        Ok(options) => {
+          println("instrument: \{options.describe()}")
+          println(
+            "instrument: parsing only; the file pipeline is not wired yet, so no output was written",
+          )
+          2
+        }
+        Err(message) => {
+          println("instrument: \{message}")
+          2
+        }
+      }
   }
 }
 
