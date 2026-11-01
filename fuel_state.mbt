@@ -1,5 +1,4 @@
 ///|
-#warnings("-unused_field")
 priv struct FuelState {
   wasm_module : @lib.Module
   fuel_global : @lib.GlobalIdx
@@ -12,7 +11,6 @@ priv struct FuelState {
 /// code global. Imported globals shift the new indices, so both indices are
 /// computed from the import and definition counts instead of from an empty
 /// global section.
-#warnings("-unused_value")
 fn add_fuel_state(
   wasm_module : @lib.Module,
   budget : Int32,

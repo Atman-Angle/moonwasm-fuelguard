@@ -40,14 +40,14 @@ test "unknown trap code is rejected" {
 }
 
 ///|
-test "builtin pipeline reaches the first pass" {
+test "builtin pipeline reaches the guard pass" {
   let fuel = FuelConfig::new(100).unwrap()
   let guards = GuardConfig::new().unwrap()
   let pipeline : Pipeline = Pipeline::builtin(
     InstrumentConfig::new(fuel, guards),
   )
   assert_true(
-    pipeline.run(@lib.Module::new()) is Err(NotImplemented("FuelPass")),
+    pipeline.run(@lib.Module::new()) is Err(NotImplemented("GuardPass")),
   )
 }
 
@@ -423,7 +423,6 @@ test "defined function and imported index counts avoid offset errors" {
   assert_eq(imported_function_count(wasm_module), 1)
   assert_eq(imported_global_count(wasm_module), 1)
   assert_eq(defined_function_count(wasm_module), 2)
-  assert_eq(defined_code_count(wasm_module), 2)
   assert_eq(defined_global_count(wasm_module), 0)
 }
 

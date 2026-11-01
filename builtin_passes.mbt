@@ -14,8 +14,8 @@ pub fn FuelPass::config(self : Self) -> FuelConfig {
 }
 
 ///|
-impl Pass for FuelPass with fn apply(_, _) {
-  Err(NotImplemented("FuelPass"))
+impl Pass for FuelPass with fn apply(self, wasm_module) {
+  apply_fuel(self.config, wasm_module)
 }
 
 ///|

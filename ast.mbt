@@ -114,7 +114,6 @@ fn count_loops_in_instructions(instructions : Array[@lib.Instruction]) -> Int32 
 }
 
 ///|
-#warnings("-unused_value")
 fn defined_function_count(wasm_module : @lib.Module) -> Int32 {
   match wasm_module.func_sec {
     Some(@lib.FuncSec(types)) => types.length()
@@ -123,16 +122,6 @@ fn defined_function_count(wasm_module : @lib.Module) -> Int32 {
 }
 
 ///|
-#warnings("-unused_value")
-fn defined_code_count(wasm_module : @lib.Module) -> Int32 {
-  match wasm_module.code_sec {
-    Some(@lib.CodeSec(functions)) => functions.length()
-    None => 0
-  }
-}
-
-///|
-#warnings("-unused_value")
 fn count_loops(wasm_module : @lib.Module) -> Int32 {
   match wasm_module.code_sec {
     Some(@lib.CodeSec(functions)) => {
@@ -165,7 +154,6 @@ fn imported_function_count(wasm_module : @lib.Module) -> Int32 {
 }
 
 ///|
-#warnings("-unused_value")
 fn imported_global_count(wasm_module : @lib.Module) -> Int32 {
   match wasm_module.import_sec {
     None => 0
@@ -182,7 +170,6 @@ fn imported_global_count(wasm_module : @lib.Module) -> Int32 {
 }
 
 ///|
-#warnings("-unused_value")
 fn defined_global_count(wasm_module : @lib.Module) -> Int32 {
   match wasm_module.global_sec {
     Some(@lib.GlobalSec(globals)) => globals.length()
@@ -251,7 +238,6 @@ fn function_comp_type(
 }
 
 ///|
-#warnings("-unused_value")
 fn function_param_count(
   wasm_module : @lib.Module,
   defined_index : Int32,
@@ -263,7 +249,6 @@ fn function_param_count(
 }
 
 ///|
-#warnings("-unused_value")
 fn function_body_local_count(
   wasm_module : @lib.Module,
   defined_index : Int32,
