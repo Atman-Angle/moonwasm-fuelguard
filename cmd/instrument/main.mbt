@@ -10,7 +10,7 @@ fn print_usage() -> Unit {
   println("")
   println("Diagnostic export: \{@core.trap_export_name}")
   println(
-    "Status: fuel metering core is implemented; the file pipeline is not wired yet.",
+    "Status: fuel-only instrumentation; GuardPass configuration and run are not implemented.",
   )
 }
 
@@ -31,13 +31,17 @@ fn main_impl(args : Array[String]) -> Int32 {
     }
     _ =>
       match parse_args(args) {
-        Ok(options) => {
-          println("instrument: \{options.describe()}")
-          println(
-            "instrument: parsing only; the file pipeline is not wired yet, so no output was written",
-          )
-          2
-        }
+        Ok(options) =>
+          match instrument_file(options) {
+            Ok(summary) => {
+              println(summary)
+              0
+            }
+            Err(message) => {
+              println("instrument: \{message}")
+              2
+            }
+          }
         Err(message) => {
           println("instrument: \{message}")
           2

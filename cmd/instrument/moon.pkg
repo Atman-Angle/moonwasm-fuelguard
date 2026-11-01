@@ -1,5 +1,6 @@
 import {
   "Atman-Angle/moonwasm-fuelguard" @core,
+  "jtenner/starshine/fs",
   "moonbitlang/core/env",
 }
 

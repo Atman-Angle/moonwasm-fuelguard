@@ -151,3 +151,31 @@ test "instrument cli description includes parsed values" {
   assert_true(text.contains("max-table-elements=none"))
   assert_true(text.contains("allow-import=[env.f,env.g]"))
 }
+
+///|
+test "instrument summary lists passes, notes, and output size" {
+  let options = parse_args(["in.wasm", "-o", "out.wasm", "--fuel", "10"]).unwrap()
+  let summary = instrument_summary(
+    options,
+    [
+      "fuel: budget=10 functions=1 loops=2", "guard: disabled (no memory, table, or import limits configured)",
+    ],
+    128,
+  )
+  assert_true(summary.contains("passes: FuelPass, GuardPass"))
+  assert_true(summary.contains("fuel: budget=10 functions=1 loops=2"))
+  assert_true(summary.contains("guard: disabled"))
+  assert_true(summary.contains("output bytes: 128"))
+}
+
+///|
+test "instrument file reports a missing input without writing output" {
+  let options = parse_args([
+    "definitely-missing-moonwasm-input.wasm", "-o", "definitely-missing-moonwasm-output.wasm",
+    "--fuel", "10",
+  ]).unwrap()
+  match instrument_file(options) {
+    Ok(_) => abort("expected a missing input error")
+    Err(message) => assert_true(message.contains("failed to read input"))
+  }
+}

@@ -34,6 +34,17 @@ pub fn GuardPass::config(self : Self) -> GuardConfig {
 }
 
 ///|
-impl Pass for GuardPass with fn apply(_, _) {
-  Err(NotImplemented("GuardPass"))
+impl Pass for GuardPass with fn apply(self, wasm_module) {
+  let config = self.config
+  if config.max_memory_pages() is None &&
+    config.max_table_elements() is None &&
+    config.allowed_imports().length() == 0 {
+    Ok(
+      PassResult::new("GuardPass", wasm_module, notes=[
+        "guard: disabled (no memory, table, or import limits configured)",
+      ]),
+    )
+  } else {
+    Err(NotImplemented("GuardPass"))
+  }
 }

@@ -40,15 +40,42 @@ test "unknown trap code is rejected" {
 }
 
 ///|
-test "builtin pipeline reaches the guard pass" {
+test "builtin pipeline passes an unconfigured guard pass" {
   let fuel = FuelConfig::new(100).unwrap()
   let guards = GuardConfig::new().unwrap()
+  let pipeline : Pipeline = Pipeline::builtin(
+    InstrumentConfig::new(fuel, guards),
+  )
+  let result = pipeline.run(@lib.Module::new()).unwrap()
+  assert_true(validate_wasm(result.output(), "test") is Ok(_))
+  assert_true(has_export(result.output(), trap_export_name))
+  let notes = result.notes()
+  assert_true(notes.any(fn(note) { note.contains("functions=0") }))
+  assert_true(notes.any(fn(note) { note.contains("guard: disabled") }))
+}
+
+///|
+test "builtin pipeline rejects a configured guard pass" {
+  let fuel = FuelConfig::new(100).unwrap()
+  let guards = GuardConfig::new(max_memory_pages=Some(16)).unwrap()
   let pipeline : Pipeline = Pipeline::builtin(
     InstrumentConfig::new(fuel, guards),
   )
   assert_true(
     pipeline.run(@lib.Module::new()) is Err(NotImplemented("GuardPass")),
   )
+}
+
+///|
+test "guard pass returns the input module unchanged when disabled" {
+  let guard_pass = GuardPass::new(GuardConfig::new().unwrap())
+  let wasm_module = function_module([], [], [@lib.Instruction::nop()])
+  let result = match Pass::apply(guard_pass, wasm_module) {
+    Ok(result) => result
+    Err(_) => abort("expected the disabled guard pass to succeed")
+  }
+  assert_eq(result.output(), wasm_module)
+  assert_true(result.notes()[0].contains("guard: disabled"))
 }
 
 ///|

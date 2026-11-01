@@ -5,7 +5,7 @@ Build-time fuel metering and resource guards for MoonBit WebAssembly modules.
 - Product name: MoonWasm Instrument
 - Repository: `moonwasm-fuelguard`
 - License: Apache-2.0
-- Status: bootstrap scaffold; FuelPass, GuardPass, and the wasmoon adapter are not implemented yet
+- Status: fuel-only build-time instrumentation; GuardPass and the wasmoon adapter are not implemented yet
 
 MoonWasm FuelGuard is designed to make a standard MoonBit `--target wasm` module carry its own execution budget. Instrumentation adds no imports, writes a fixed fuel budget at build time, traps deterministically when fuel or resource limits are exhausted, and exposes a readable trap code through `__moonwasm_trap_code`.
 
@@ -13,18 +13,37 @@ MoonWasm FuelGuard is designed to make a standard MoonBit `--target wasm` module
 
 | Area | Status |
 | --- | --- |
-| Core API and package boundaries | Scaffolded |
-| Input policy | Basic filters implemented |
-| Pass pipeline | Closed loop implemented; built-in passes return `NotImplemented` |
-| Decode / validate / encode | Wrapped with staged errors |
-| FuelPass | Not implemented |
-| GuardPass | Not implemented |
-| `cmd/instrument` | Scaffold, moonx-compatible wasm entry |
+| Core API and package boundaries | Implemented |
+| Input policy | Multiple memories/tables, GC types, and reserved exports rejected |
+| Pass pipeline | Fixed Fuel → Guard order, validation after every pass |
+| Decode / validate / encode | Implemented with staged errors |
+| FuelPass | Implemented: entry and loop body charges, deterministic fuel trap |
+| GuardPass | Disabled by default; configured guards are rejected as not implemented |
+| `cmd/instrument` | Fuel-only file pipeline, moonx-compatible wasm entry |
 | `cmd/run` | Scaffold, Linux-native entry only |
 | wasmoon adapter | Not implemented |
 | Differential corpus and benchmarks | Not started |
 
-This repository is intentionally honest about its scaffold state. It does not yet meter or guard any module.
+This repository is honest about its state: instrumentation meters fuel only, and no runtime execution has been validated through wasmoon.
+
+## Fuel-only usage
+
+```text
+moon run cmd/instrument --target wasm -- <in.wasm> -o <out.wasm> --fuel <N> \
+  [--max-memory-pages <N>] [--max-table-elements <N>] [--allow-import <module.name>]...
+```
+
+Current behavior:
+
+- Reads and decodes the input, runs the input policy, then applies `FuelPass`.
+- Charges 1 unit at every defined function entry and every loop body start.
+- Appends a mutable `i32` fuel global and a mutable `i32` trap code global, exporting the latter as `__moonwasm_trap_code`.
+- Traps with code `1` when the remaining fuel becomes negative.
+- Validates after each pass and again before encoding; the output file is written only after encoding succeeds.
+- Exits `2` without writing a file on decode, policy, validation, encode, or option errors.
+- Rejects any guard option (`--max-memory-pages`, `--max-table-elements`, `--allow-import`) with a not-implemented error.
+
+Not implemented yet: memory/table growth guards, import allowlists, the native `run` adapter, runtime trap execution, differential corpus, and benchmarks.
 
 ## CLI split
 
@@ -52,7 +71,7 @@ moonx Atman-Angle/moonwasm-fuelguard/cmd/instrument --help
 ```text
 .
 ├── cmd/
-│   ├── instrument/        # wasm + moonx entry
+│   ├── instrument/        # wasm + moonx entry (cli, file pipeline)
 │   └── run/               # native Linux entry
 ├── runner/                # trap diagnosis and future wasmoon adapter
 ├── docs/                  # requirements and architecture
@@ -62,7 +81,10 @@ moonx Atman-Angle/moonwasm-fuelguard/cmd/instrument --help
 ├── pipeline.mbt           # fixed validation pipeline
 ├── policy.mbt             # input rejection rules
 ├── codec.mbt              # decode / validate / encode wrappers
-├── builtin_passes.mbt     # FuelPass and GuardPass scaffolds
+├── ast.mbt                # private AST traversal helpers
+├── fuel_state.mbt         # fuel and trap code globals
+├── fuel_pass.mbt          # fuel metering pass
+├── builtin_passes.mbt     # FuelPass and GuardPass wiring
 └── trap.mbt               # trap code model
 ```
 
@@ -106,7 +128,7 @@ Key invariants:
 
 ## Roadmap
 
-1. Implement FuelPass and its unit tests.
+1. ~~Implement FuelPass and its unit tests.~~ (fuel-only instrumentation implemented)
 2. Implement GuardPass and import allowlisting.
 3. Add the Linux wasmoon adapter and CI trap demo.
 4. Add the deterministic differential corpus and performance benchmark.
