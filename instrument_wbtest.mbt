@@ -235,3 +235,235 @@ test "non-reserved export names are accepted" {
   )
   assert_true(check_input(wasm_module) is Ok(_))
 }
+
+///|
+fn void_block(body : Array[@lib.Instruction]) -> @lib.Instruction {
+  @lib.Instruction::block(@lib.BlockType::void_(), @lib.Expr::new(body))
+}
+
+///|
+fn void_loop(body : Array[@lib.Instruction]) -> @lib.Instruction {
+  @lib.Instruction::loop_(@lib.BlockType::void_(), @lib.Expr::new(body))
+}
+
+///|
+fn block_body(instruction : @lib.Instruction) -> @lib.Expr {
+  match instruction {
+    @lib.Block(_, body) => body
+    _ => abort("expected block instruction")
+  }
+}
+
+///|
+fn loop_body(instruction : @lib.Instruction) -> @lib.Expr {
+  match instruction {
+    @lib.Loop(_, body) => body
+    _ => abort("expected loop instruction")
+  }
+}
+
+///|
+fn function_module(
+  params : Array[@lib.ValType],
+  local_types : Array[@lib.ValType],
+  body : Array[@lib.Instruction],
+) -> @lib.Module {
+  @lib.Module::new(
+    type_sec=Some(
+      @lib.TypeSec::new([
+        @lib.RecType::new(
+          @lib.SubType::comp_type(@lib.CompType::func(params, [])),
+        ),
+      ]),
+    ),
+    func_sec=Some(@lib.FuncSec::new([@lib.TypeIdx::new(0U)])),
+    code_sec=Some(
+      @lib.CodeSec::new([
+        @lib.Func::new(
+          @lib.Locals::from_types(local_types),
+          @lib.Expr::new(body),
+        ),
+      ]),
+    ),
+  )
+}
+
+///|
+test "map_expr rebuilds nested instructions without mutating the source" {
+  let source = @lib.Expr::new([
+    void_block([void_loop([@lib.Instruction::nop()])]),
+  ])
+  let mapped = map_expr(source, fn(instruction) {
+    match instruction {
+      @lib.Nop => @lib.Instruction::i32_const(@lib.I32::new(7))
+      _ => instruction
+    }
+  })
+  let @lib.Expr(source_outer) = source
+  assert_true(source_outer[0] is @lib.Block(_, _))
+  let @lib.Expr(source_block) = block_body(source_outer[0])
+  assert_true(source_block[0] is @lib.Loop(_, _))
+  let @lib.Expr(source_loop) = loop_body(source_block[0])
+  assert_true(source_loop[0] is @lib.Nop)
+  let @lib.Expr(mapped_outer) = mapped
+  let @lib.Expr(mapped_block) = block_body(mapped_outer[0])
+  let @lib.Expr(mapped_loop) = loop_body(mapped_block[0])
+  assert_true(mapped_loop[0] is @lib.I32Const(_))
+}
+
+///|
+test "map_expr traverses if branches" {
+  let source = @lib.Expr::new([
+    @lib.Instruction::if_(
+      @lib.BlockType::void_(),
+      [@lib.Instruction::nop()],
+      Some([@lib.Instruction::nop()]),
+    ),
+  ])
+  let mapped = map_expr(source, fn(instruction) {
+    match instruction {
+      @lib.Nop => @lib.Instruction::i32_const(@lib.I32::new(1))
+      _ => instruction
+    }
+  })
+  let @lib.Expr(outer) = mapped
+  match outer[0] {
+    @lib.If(_, then_body, Some(else_body)) => {
+      assert_true(then_body[0] is @lib.I32Const(_))
+      assert_true(else_body[0] is @lib.I32Const(_))
+    }
+    _ => abort("expected if instruction")
+  }
+}
+
+///|
+test "count_loops counts nested loops across structured instructions" {
+  let body = [
+    void_block([
+      void_loop([@lib.Instruction::nop()]),
+      @lib.Instruction::if_(
+        @lib.BlockType::void_(),
+        [void_loop([])],
+        Some([void_loop([void_loop([])])]),
+      ),
+    ]),
+    void_loop([void_block([void_loop([])])]),
+  ]
+  assert_eq(count_loops_in_instructions(body), 6)
+  let wasm_module = function_module([], [], body)
+  assert_eq(count_loops(wasm_module), 6)
+}
+
+///|
+test "count_loops counts loops inside try bodies and catches" {
+  let body = [
+    @lib.Instruction::try_(
+      @lib.BlockType::void_(),
+      @lib.Expr::new([void_loop([])]),
+      [
+        @lib.LegacyCatch::tagged(
+          @lib.TagIdx::new(0U),
+          @lib.Expr::new([void_loop([])]),
+        ),
+        @lib.LegacyCatch::all(@lib.Expr::new([void_loop([])])),
+      ],
+    ),
+    @lib.Instruction::try_table(
+      @lib.BlockType::void_(),
+      [],
+      @lib.Expr::new([void_loop([])]),
+    ),
+  ]
+  assert_eq(count_loops_in_instructions(body), 4)
+}
+
+///|
+test "count_loops is zero for loop-free modules and empty modules" {
+  assert_eq(count_loops(@lib.Module::new()), 0)
+  assert_eq(count_loops(function_module([], [], [])), 0)
+  assert_eq(count_loops(function_module([], [], [@lib.Instruction::nop()])), 0)
+}
+
+///|
+test "defined function and imported index counts avoid offset errors" {
+  let wasm_module = @lib.Module::new(
+    type_sec=Some(
+      @lib.TypeSec::new([
+        @lib.RecType::new(@lib.SubType::comp_type(@lib.CompType::func([], []))),
+      ]),
+    ),
+    import_sec=Some(
+      @lib.ImportSec::new([
+        @lib.Import::new(
+          @lib.Name::from_string("env"),
+          @lib.Name::from_string("f"),
+          @lib.ExternType::func(@lib.TypeIdx::new(0U)),
+        ),
+        @lib.Import::new(
+          @lib.Name::from_string("env"),
+          @lib.Name::from_string("g"),
+          @lib.ExternType::global(
+            @lib.GlobalType::new(@lib.ValType::i32(), false),
+          ),
+        ),
+        mem_import("env", "memory"),
+        table_import("env", "table"),
+      ]),
+    ),
+    func_sec=Some(
+      @lib.FuncSec::new([@lib.TypeIdx::new(0U), @lib.TypeIdx::new(0U)]),
+    ),
+    code_sec=Some(
+      @lib.CodeSec::new([
+        @lib.Func::new(@lib.Locals::empty(), @lib.Expr::new([])),
+        @lib.Func::new(@lib.Locals::empty(), @lib.Expr::new([])),
+      ]),
+    ),
+  )
+  assert_eq(imported_function_count(wasm_module), 1)
+  assert_eq(imported_global_count(wasm_module), 1)
+  assert_eq(defined_function_count(wasm_module), 2)
+  assert_eq(defined_code_count(wasm_module), 2)
+  assert_eq(defined_global_count(wasm_module), 0)
+}
+
+///|
+test "function local counts include parameters and body locals" {
+  let wasm_module = function_module(
+    [@lib.ValType::i32(), @lib.ValType::i64()],
+    [@lib.ValType::i32(), @lib.ValType::i32(), @lib.ValType::f64()],
+    [],
+  )
+  assert_eq(function_param_count(wasm_module, 0), 2)
+  assert_eq(function_body_local_count(wasm_module, 0), 3)
+}
+
+///|
+test "type group flattening finds the referenced function type" {
+  let wasm_module = @lib.Module::new(
+    type_sec=Some(
+      @lib.TypeSec::new([
+        @lib.RecType::group([
+          @lib.SubType::comp_type(@lib.CompType::func([], [])),
+          @lib.SubType::comp_type(
+            @lib.CompType::func([@lib.ValType::i32()], []),
+          ),
+        ]),
+      ]),
+    ),
+    func_sec=Some(@lib.FuncSec::new([@lib.TypeIdx::new(1U)])),
+    code_sec=Some(
+      @lib.CodeSec::new([
+        @lib.Func::new(@lib.Locals::empty(), @lib.Expr::new([])),
+      ]),
+    ),
+  )
+  assert_eq(function_param_count(wasm_module, 0), 1)
+}
+
+///|
+test "local counts are zero for missing functions" {
+  assert_eq(function_param_count(@lib.Module::new(), 0), 0)
+  assert_eq(function_body_local_count(@lib.Module::new(), 0), 0)
+  assert_eq(function_body_local_count(function_module([], [], []), 3), 0)
+}
