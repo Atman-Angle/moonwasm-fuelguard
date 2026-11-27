@@ -13,8 +13,8 @@ packages are not copied into this repository unless explicitly stated.
   `LICENSE` and `NOTICE` files rather than relying only on the package manifest.
 
 FuelGuard applies the published compatibility diff from
-[the compatibility patch](scripts/patches/starshine-0.3.0-moonbit-20261126.patch) to
-the local starshine sources. Retain upstream attribution for the modified sources.
+[the compatibility patch](scripts/patches/starshine-0.3.0-moonbit-20261126.patch)
+to the local starshine sources. Retain upstream attribution for the modified sources.
 
 ## MoonBit libraries
 

@@ -663,7 +663,7 @@ def main():
     if not opts.build_only:
         measure(run, cases, workers, artifacts, protocol, opts.smoke, first_group, variants, cells)
     if source_hashes() != source or sha256(PERFORMANCE_PROTOCOL) != proposal_sha256:
-        raise ValueError("source or proposal changed during the benchmark")
+        raise ValueError("source or performance protocol changed during the benchmark")
     write_json(run.out / "finished.json", dict(
         finish_utc_ns=time.time_ns(), load_after=os.getloadavg(),
         samples_sha256=None if opts.build_only else sha256(run.out / "samples.jsonl"),

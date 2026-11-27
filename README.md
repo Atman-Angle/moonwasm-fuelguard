@@ -1,10 +1,10 @@
 # MoonWasm FuelGuard
 
-FuelGuard adds build-time resource budgets to supported MoonBit WebAssembly modules. A single pass pipeline applies weighted instruction metering, call-stack limits, and memory or table growth limits. The instrumented module uses its existing imports. A resource failure traps and reports a code and site.
+FuelGuard adds build-time resource budgets to supported MoonBit WebAssembly modules. Its MoonBit pipeline applies weighted Fuel metering, stack and depth checks, and memory or table growth limits without adding imports.
 
-## Quick start
+Fuel is a deterministic compute quota, not CPU time. FuelGuard is not a security sandbox and does not limit host imports, filesystem or network access, or wall-clock time.
 
-Use MoonBit 1.0 RC and a Linux x86-64 shell. The installed instrumenter accepts a supported original Wasm file and creates a separate protected file. For a small reproducible input, build the scalar MoonBit demo.
+For a scalar MoonBit demo, build and instrument a real module, then run it with the Linux runner:
 
 ```sh
 (cd fixtures/demo && moon build --target wasm --release)
@@ -16,16 +16,16 @@ fuelguard-instrument fixtures/demo/_build/wasm/release/build/demo/demo.wasm \
 fuelguard-run _build/demo/protected.wasm --invoke short_loop --arg 10
 ```
 
-The demo returns `45`. Use a fresh output path on each invocation.
+The demo returns `45`. Use a new output path for each instrumentation run.
 
-- Install the Wasm instrumenter and Linux runner or migrate historical artifacts. [Installation and migration](docs/install.md)
-- Set resource limits, verify a Wasm and manifest pair, and look up the original instruction behind a trap. [CLI reference](docs/cli.md)
-- Check supported Wasm features and Linux runtime constraints. [Support](docs/support.md)
-- Inspect prices, span accounting, stack units, or the manifest ABI. [Fuel weights](docs/implementation/fuel-v1.md) · [Fuel v2](docs/implementation/fuel-v2.md) · [Stack v2](docs/implementation/stack-v2.md) · [Manifest v2](docs/implementation/manifest-v2.md)
-- Review timing and size measurements and reproduce the results from source. [Performance report](docs/performance.md) · [Reproduction](docs/reproduce.md)
+- [Installation and migration](docs/install.md)
+- [CLI reference](docs/cli.md)
+- [Supported inputs and runtime limits](docs/support.md)
+- [Fuel weights](docs/implementation/fuel-v1.md), [Fuel v2](docs/implementation/fuel-v2.md), [Stack v2](docs/implementation/stack-v2.md), and [manifest v2](docs/implementation/manifest-v2.md)
+- [Performance report](docs/performance.md) and [reproduction guide](docs/reproduce.md)
 
-The library exposes the same production planning and instrumentation through `Pipeline::plan`, `Pipeline::run`, and `resolve_production_site`.
+The library exposes planning and instrumentation through `Pipeline::plan`, `Pipeline::run`, and `resolve_production_site`.
 
 ## License
 
-Apache-2.0. [License](LICENSE) · [Notice](NOTICE) · [Third-party dependencies](THIRD_PARTY.md)
+Apache-2.0. See [LICENSE](LICENSE), [NOTICE](NOTICE), and [THIRD_PARTY.md](THIRD_PARTY.md).

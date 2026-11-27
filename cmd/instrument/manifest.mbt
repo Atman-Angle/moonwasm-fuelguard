@@ -15,7 +15,7 @@ fn sha256_hex(bytes : Bytes) -> String {
 ///|
 fn hex_bytes(bytes : Iter[Byte]) -> String {
   let digits = b"0123456789abcdef"
-  let result = StringBuilder()
+  let result = StringBuilder(capacity=64)
   for byte in bytes {
     let index = byte.to_int()
     result.write_char(digits[index / 16].to_int().unsafe_to_char())
