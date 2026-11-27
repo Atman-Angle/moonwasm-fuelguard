@@ -1,7 +1,14 @@
 import {
   "Atman-Angle/moonwasm-fuelguard" @core,
   "jtenner/starshine/fs",
+  "jtenner/starshine/lib",
+  "moonbitlang/async",
+  "moonbitlang/async/fs" @aio,
+  "moonbitlang/async/os_error",
   "moonbitlang/core/env",
+  "moonbitlang/core/encoding/utf8",
+  "moonbitlang/core/json",
+  "moonbitlang/x/crypto",
 }
 
 pkgtype(kind: "executable")

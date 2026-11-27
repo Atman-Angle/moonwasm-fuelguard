@@ -1,0 +1,7 @@
+# Support
+
+FuelGuard 0.2.0 instruments core wasm32 modules. The production profile supports scalar instructions, structured control flow, multi-value functions, direct calls, and indirect calls through one fixed internal funcref table. Exported functions and core start functions receive stack entry checks. It supports one module-defined unshared memory and can meter bulk memory operations and guard growth. One externref table can use guarded growth.
+
+The production profile rejects SIMD and v128, threads, atomics, memory64, GC, components, exception handling, tail calls, multiple memories or tables, imported memories or tables, exported tables, mutable funcref tables and escaping function references. Indirect calls require a statically known target set. The policy also checks resource sizes and reserved diagnostic names. The original module supplies its own imports and must meet the production allowlist. [Production policy](../production_policy.mbt)
+
+The product runner targets Linux x86-64 with wasmoon 0.18.0. It uses an 8 MiB minimum process stack soft limit and a 16 MiB wasmoon fiber stack. It accepts up to 100,000 abstract stack units and logical depth 128. Wasmtime provides an independent test runtime. WASI access depends on the configured host. Treat FuelGuard as one layer of a trusted plugin or CI pipeline and apply separate host controls for imported functions, filesystem, network and wall-clock access. [CLI reference](cli.md)

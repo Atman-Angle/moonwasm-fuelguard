@@ -1,21 +1,20 @@
 #!/usr/bin/env bash
-# End-to-end check: build the real MoonBit fixture and instrument it twice.
+# End-to-end check: instrument the frozen, supported MoonBit fixture twice.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-OUT_DIR="$ROOT/_build/e2e"
-INPUT="$ROOT/fixtures/hello/hello.wasm"
-FIRST="$OUT_DIR/hello.fuel.wasm"
-SECOND="$OUT_DIR/hello.fuel.second.wasm"
+mkdir -p "$ROOT/_build"
+OUT_DIR="$(mktemp -d "$ROOT/_build/e2e.XXXXXX")"
+DEMO="$ROOT/fixtures/demo"
+INPUT="$OUT_DIR/demo-build/wasm/release/build/demo/demo.wasm"
+FIRST="$OUT_DIR/demo.fuel.wasm"
+SECOND="$OUT_DIR/demo.fuel.second.wasm"
 FUEL=100000
 
-bash "$ROOT/fixtures/hello/build.sh"
-
-mkdir -p "$OUT_DIR"
-rm -f "$FIRST" "$SECOND"
+(cd "$DEMO" && moon build --target wasm --release --target-dir "$OUT_DIR/demo-build")
 
 cd "$ROOT"
-moon run cmd/instrument --target wasm -- "$INPUT" -o "$FIRST" --fuel "$FUEL"
+moon run cmd/instrument --target wasm -- "$INPUT" -o "$FIRST" --fuel "$FUEL" --max-memory-pages 64 --max-table-elements 64 --max-stack-units 100000 --max-call-depth 128
 
 if [ ! -s "$FIRST" ]; then
   echo "e2e failure: instrument produced no output" >&2
@@ -32,7 +31,7 @@ if ! grep -a -q "__moonwasm_trap_code" "$FIRST"; then
   exit 1
 fi
 
-moon run cmd/instrument --target wasm -- "$INPUT" -o "$SECOND" --fuel "$FUEL"
+moon run cmd/instrument --target wasm -- "$INPUT" -o "$SECOND" --fuel "$FUEL" --max-memory-pages 64 --max-table-elements 64 --max-stack-units 100000 --max-call-depth 128
 
 if ! cmp -s "$FIRST" "$SECOND"; then
   echo "e2e failure: repeated instrumentation produced different bytes" >&2

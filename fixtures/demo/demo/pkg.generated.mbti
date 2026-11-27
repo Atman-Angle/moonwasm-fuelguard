@@ -1,0 +1,19 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "fuelguard/s16-demo/demo"
+
+// Values
+pub fn forever() -> Unit
+
+pub fn long_loop(Int32) -> Int32
+
+pub fn recurse(Int32) -> Int32
+
+pub fn short_loop(Int32) -> Int32
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits

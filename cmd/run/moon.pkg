@@ -1,6 +1,30 @@
 import {
+  "Atman-Angle/moonwasm-fuelguard" @instrument,
   "Atman-Angle/moonwasm-fuelguard/runner",
+  "Milky2018/wasmoon/cmd/wasmoon/commands",
+  "Milky2018/wasmoon/executor",
+  "Milky2018/wasmoon/jit",
+  "Milky2018/wasmoon/runtime",
+  "Milky2018/wasmoon/wasi",
+  "Milky2018/wasmoon/wast/jit" @binding,
+  "Milky2018/wasm_core/parser",
+  "Milky2018/wasm_core/types",
+  "Milky2018/wasm_core/validator",
+  "moonbitlang/core/encoding/utf8",
   "moonbitlang/core/env",
+  "moonbitlang/core/string",
+  "moonbitlang/x/fs",
 }
+
+import {
+  "Milky2018/wasm_core/wat",
+  "Milky2018/wasm_core/encoder",
+} for "wbtest"
+
+options(
+  "native-stub": [ "host.c" ],
+)
+
+supported_targets = "+native"
 
 pkgtype(kind: "executable")

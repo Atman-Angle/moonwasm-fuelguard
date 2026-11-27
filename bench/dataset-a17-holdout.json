@@ -1,0 +1,267 @@
+{
+  "schema": "fuelguard-bench-dataset-v1",
+  "frozen_utc": "2026-11-18T23:34:57.010139+00:00",
+  "toolchain": {
+    "moon": "moon 0.1.20261016 (1af328f 2026-10-16)\n\nFeature flags enabled: rr_moon_mod,rr_moon_pkg",
+    "wasm-tools": "wasm-tools 1.263.0 (7a2fa422c 2026-10-30)"
+  },
+  "config": {
+    "fuel": 9223372036854775807,
+    "memory_pages": 64,
+    "table_elements": 64
+  },
+  "sampling": {
+    "schedule_seed": 180026,
+    "bootstrap_seed": 180027,
+    "bootstrap_draws": 10000,
+    "processes": 3,
+    "warmups": 5,
+    "samples": 300,
+    "build_processes": 3,
+    "cpu": 4,
+    "clock": "CLOCK_MONOTONIC",
+    "outliers": "retain all successful observations",
+    "interference": "serial workers, CPU affinity, AC balanced, no intentional competing workloads"
+  },
+  "entries": [
+    {
+      "id": "F0-hello",
+      "path": "fixtures/hello/hello.wasm",
+      "sha256": "bce5d762eee3e537918833217de9a7ac0acec198dcdf71ea02c2573f1a0f3f96",
+      "bytes": 5387,
+      "split": "tuning",
+      "kind": "application",
+      "stdout": "5050\n111\n190\n",
+      "result_i32": null,
+      "entry": "_start",
+      "core_start": false,
+      "windows": {
+        "lifecycle": 8,
+        "hot": 32
+      },
+      "stack_units": 100000,
+      "depth": 128
+    },
+    {
+      "id": "F1-json",
+      "path": "fixtures/workloads/json_parse/json_parse.wasm",
+      "sha256": "8ab4c1b5678dda4683e5c5dde20d63ab6340d059ef817eb1448adc2528c90501",
+      "bytes": 12628,
+      "split": "tuning",
+      "kind": "application",
+      "stdout": "json5 rounds=200 checksum=8928400\n",
+      "result_i32": null,
+      "entry": "_start",
+      "core_start": false,
+      "windows": {
+        "lifecycle": 1,
+        "hot": 1
+      },
+      "stack_units": 100000,
+      "depth": 128
+    },
+    {
+      "id": "F2-lisp",
+      "path": "fixtures/workloads/lisp_eval/lisp_eval.wasm",
+      "sha256": "800c887ccb19dd15327272a2c87d8b593ef705e9f01bc175c1d479be3ef738ac",
+      "bytes": 10268,
+      "split": "tuning",
+      "kind": "application",
+      "stdout": "Number(2584)\nNumber(0)\n",
+      "result_i32": null,
+      "entry": "_start",
+      "core_start": false,
+      "windows": {
+        "lifecycle": 1,
+        "hot": 1
+      },
+      "stack_units": 500000,
+      "depth": 2048
+    },
+    {
+      "id": "F3-sha256",
+      "path": "fixtures/workloads/sha256_hash/sha256_hash.wasm",
+      "sha256": "41716fad7e22a8700e2729cd9bfff0fd32517286fff62749f0eceb19b9beba90",
+      "bytes": 10219,
+      "split": "tuning",
+      "kind": "application",
+      "stdout": "sha256 rounds=32 bytes=4096 checksum=132768\nwords=-807933589 1631200399 1145861550 -1471824509 -268182326 1702735228 1915947960 668078838\n",
+      "result_i32": null,
+      "entry": "_start",
+      "core_start": true,
+      "windows": {
+        "lifecycle": 1,
+        "hot": 1
+      },
+      "stack_units": 100000,
+      "depth": 128
+    },
+    {
+      "id": "holdout-json_parse",
+      "path": "bench/fixtures/a17-holdout/json_parse.wasm",
+      "sha256": "1933fd281f0f07c12a638f0997838279c64ef6c2acc19a869872bfff97107b2d",
+      "bytes": 12628,
+      "split": "holdout",
+      "kind": "application",
+      "stdout": "json5 rounds=217 checksum=9690135\n",
+      "result_i32": null,
+      "entry": "_start",
+      "core_start": false,
+      "windows": {
+        "lifecycle": 1,
+        "hot": 1
+      },
+      "stack_units": 100000,
+      "depth": 128
+    },
+    {
+      "id": "holdout-lisp_eval",
+      "path": "bench/fixtures/a17-holdout/lisp_eval.wasm",
+      "sha256": "54cc99793130e9fcafb0bc834317354e330c2042b5b5b19704bf04206045bdc0",
+      "bytes": 10268,
+      "split": "holdout",
+      "kind": "application",
+      "stdout": "Number(4181)\nNumber(0)\n",
+      "result_i32": null,
+      "entry": "_start",
+      "core_start": false,
+      "windows": {
+        "lifecycle": 1,
+        "hot": 1
+      },
+      "stack_units": 500000,
+      "depth": 2048
+    },
+    {
+      "id": "holdout-sha256_hash",
+      "path": "bench/fixtures/a17-holdout/sha256_hash.wasm",
+      "sha256": "ffbc02f1d264867a16e9b0b75e712187ca44030cf222155a19a11c2d18ce9a71",
+      "bytes": 10219,
+      "split": "holdout",
+      "kind": "application",
+      "stdout": "sha256 rounds=37 bytes=4096 checksum=153513\nwords=-807933589 1631200399 1145861550 -1471824509 -268182326 1702735228 1915947960 668078838\n",
+      "result_i32": null,
+      "entry": "_start",
+      "core_start": true,
+      "windows": {
+        "lifecycle": 1,
+        "hot": 1
+      },
+      "stack_units": 100000,
+      "depth": 128
+    },
+    {
+      "id": "tuning-call",
+      "path": "bench/fixtures/tuning-call.wasm",
+      "sha256": "94403a1a475572781688bdff8dcbcfe0420fb13b3b736541c6e0fe17c8f35977",
+      "bytes": 78,
+      "split": "tuning",
+      "kind": "micro",
+      "stdout": "",
+      "result_i32": 58734592,
+      "entry": "run",
+      "core_start": false,
+      "windows": {
+        "lifecycle": 4,
+        "hot": 4
+      },
+      "stack_units": 100000,
+      "depth": 128
+    },
+    {
+      "id": "tuning-start",
+      "path": "bench/fixtures/tuning-start.wasm",
+      "sha256": "f2189559c3f8e96587266ec57936c4710aae3da4c50ceb946839ef4bde44a989",
+      "bytes": 91,
+      "split": "tuning",
+      "kind": "micro",
+      "stdout": "",
+      "result_i32": null,
+      "entry": null,
+      "core_start": true,
+      "windows": {
+        "lifecycle": 4
+      },
+      "stack_units": 100000,
+      "depth": 128
+    },
+    {
+      "id": "holdout-call",
+      "path": "bench/fixtures/a17-holdout/call.wasm",
+      "sha256": "bee4eee6a08ca5d548caaf44a2d098d5b6f7293c43d0bf22b721b496dc9eaced",
+      "bytes": 78,
+      "split": "holdout",
+      "kind": "micro",
+      "stdout": "",
+      "result_i32": 243413820,
+      "entry": "run",
+      "core_start": false,
+      "windows": {
+        "lifecycle": 4,
+        "hot": 4
+      },
+      "stack_units": 100000,
+      "depth": 128
+    },
+    {
+      "id": "holdout-start",
+      "path": "bench/fixtures/a17-holdout/start.wasm",
+      "sha256": "e9449238f5669ae6cf63ab85d6106c783543d8d3880375fca216e8f5faccd706",
+      "bytes": 92,
+      "split": "holdout",
+      "kind": "micro",
+      "stdout": "",
+      "result_i32": null,
+      "entry": null,
+      "core_start": true,
+      "windows": {
+        "lifecycle": 4
+      },
+      "stack_units": 100000,
+      "depth": 128
+    },
+    {
+      "id": "build-64",
+      "split": "tuning",
+      "kind": "build",
+      "bytes": 65536,
+      "functions": 64,
+      "instructions": 16384,
+      "sha256": "2144c082511485bd74bfb95235ac5edfb21438589cf2200d331a2753c29a154a",
+      "depth": 128,
+      "stack_units": 100000,
+      "stdout": "",
+      "windows": {}
+    },
+    {
+      "id": "build-512",
+      "split": "tuning",
+      "kind": "build",
+      "bytes": 524288,
+      "functions": 512,
+      "instructions": 131072,
+      "sha256": "a30337d48b4b5428fa70d1797941f909d495ed6a345c50a744c2877032e51549",
+      "depth": 128,
+      "stack_units": 100000,
+      "stdout": "",
+      "windows": {}
+    },
+    {
+      "id": "build-4096",
+      "split": "tuning",
+      "kind": "build",
+      "bytes": 4194304,
+      "functions": 4096,
+      "instructions": 1048576,
+      "sha256": "c60d726d6b8f8de4b8130e5475267b9377778a5126ca533bc9f2badab27e4c83",
+      "depth": 128,
+      "stack_units": 100000,
+      "stdout": "",
+      "windows": {}
+    }
+  ],
+  "holdout_generation": {
+    "recipe": "a17-frozen-scalar-inputs-v1",
+    "base_dataset_sha256": "ada027679aaab88d850b33e7129b5b5b9fbbcff2b2bc2e8316560b547aca8836"
+  }
+}

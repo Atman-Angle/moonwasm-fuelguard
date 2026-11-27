@@ -1,0 +1,5 @@
+options(
+  link: {
+    "wasm": { "exports": [ "short_loop", "long_loop", "forever", "recurse" ] },
+  },
+)

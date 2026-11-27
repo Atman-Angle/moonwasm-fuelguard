@@ -1,0 +1,17 @@
+import {
+  "Milky2018/wasmoon/cmd/wasmoon/commands",
+  "Milky2018/wasmoon/executor",
+  "Milky2018/wasmoon/jit",
+  "Milky2018/wasmoon/runtime",
+  "Milky2018/wasmoon/wasi",
+  "Milky2018/wasmoon_jit",
+  "Milky2018/wasmoon/wast/jit" @binding,
+  "Milky2018/wasm_core/parser",
+  "Milky2018/wasm_core/types",
+  "Milky2018/wasm_core/validator",
+  "moonbitlang/core/env",
+  "moonbitlang/core/string",
+  "moonbitlang/x/fs",
+}
+options("native-stub": ["clock.c"])
+pkgtype(kind: "executable")

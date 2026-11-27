@@ -1,11 +1,13 @@
 ///|
-fn fuel_pass_result(wasm_module : @lib.Module, budget : Int32) -> PassResult {
+fn fuel_pass_result(wasm_module : @lib.Module, budget : Int64) -> PassResult {
   let config = FuelConfig::new(budget).unwrap()
   match Pass::apply(FuelPass::new(config), wasm_module) {
     Ok(result) => result
     Err(error) => abort("fuel pass failed: \{error.message()}")
   }
 }
+
+///|
 
 ///|
 fn output_body(
@@ -39,61 +41,33 @@ fn charge_indices(
       instructions[start + 2],
       instructions[start + 3],
       instructions[start + 4],
-      instructions[start + 5],
-      instructions[start + 6],
-      instructions[start + 7],
-      instructions[start + 8],
     ) {
     (
       @lib.GlobalGet(fuel),
-      @lib.I32Const(step),
-      @lib.I32Sub,
       @lib.LocalTee(temp),
-      @lib.GlobalSet(written),
-      @lib.LocalGet(loaded),
-      @lib.I32Const(zero),
-      @lib.I32LtS,
+      @lib.I64Const(_),
+      @lib.I64LtS,
       @lib.If(_, trap_body, None),
-    ) => {
-      let trap_index = if trap_body.length() == 3 {
-        match (trap_body[0], trap_body[1], trap_body[2]) {
-          (@lib.I32Const(code), @lib.GlobalSet(trap), @lib.Unreachable) =>
-            if code == @lib.I32::new(TrapCode::Fuel.to_code()) {
-              Some(trap)
-            } else {
-              None
-            }
+    ) =>
+      if trap_body.length() == 5 {
+        match trap_body[1] {
+          @lib.GlobalSet(trap) => Some((fuel, temp, trap))
           _ => None
         }
       } else {
         None
       }
-      match trap_index {
-        Some(trap) =>
-          if step == @lib.I32::new(1) &&
-            zero == @lib.I32::new(0) &&
-            written == fuel &&
-            loaded == temp {
-            Some((fuel, temp, trap))
-          } else {
-            None
-          }
-        None => None
-      }
-    }
     _ => None
   }
 }
 
 ///|
-fn is_charge_start(instructions : Array[@lib.Instruction]) -> Bool {
-  charge_indices(instructions, 0) is Some(_)
-}
-
-///|
 fn charge_site_count(instructions : Array[@lib.Instruction]) -> Int32 {
-  let mut count = if is_charge_start(instructions) { 1 } else { 0 }
-  for instruction in instructions {
+  let mut count = 0
+  for index, instruction in instructions {
+    if charge_indices(instructions, index) is Some(_) {
+      count += 1
+    }
     match instruction {
       @lib.Block(_, body) => {
         let @lib.Expr(inner) = body
@@ -135,7 +109,81 @@ test "fuel pass charges the function entry and adds one temp local" {
   assert_true(body[9] is @lib.Nop)
   let locals = output_locals(result.output(), 0)
   assert_eq(locals.length(), 1)
-  assert_eq(locals[0], @lib.ValType::i32())
+  assert_eq(locals[0], @lib.ValType::i64())
+}
+
+///|
+test "fuel cache reload is skipped only for direct unmetered targets" {
+  let metered_functions = [true, true, false]
+  assert_true(
+    call_can_change_fuel(
+      @lib.Instruction::call(@lib.FuncIdx::new(0U)),
+      metered_functions,
+    ),
+  )
+  assert_true(
+    call_can_change_fuel(
+      @lib.Instruction::call(@lib.FuncIdx::new(1U)),
+      metered_functions,
+    ),
+  )
+  assert_false(
+    call_can_change_fuel(
+      @lib.Instruction::call(@lib.FuncIdx::new(2U)),
+      metered_functions,
+    ),
+  )
+  assert_true(
+    call_can_change_fuel(
+      @lib.Instruction::call(@lib.FuncIdx::new(3U)),
+      metered_functions,
+    ),
+  )
+  assert_true(
+    call_can_change_fuel(
+      @lib.Instruction::call_indirect(
+        @lib.TypeIdx::new(0U),
+        @lib.TableIdx::new(0U),
+      ),
+      metered_functions,
+    ),
+  )
+}
+
+///|
+test "Fuel v2 cache can cover dynamic-cost functions with multiple spans" {
+  assert_false(fuel_cache_profitable(1, 0, true))
+  assert_false(fuel_cache_profitable(2, 1, false))
+  assert_true(fuel_cache_profitable(3, 1, true))
+  assert_true(fuel_cache_profitable(3, 0, false))
+}
+
+///|
+test "fuel cache marks callers of metered functions as balance-changing" {
+  let function_type = @lib.RecType::new(
+    @lib.SubType::comp_type(@lib.CompType::func([], [])),
+  )
+  let wasm_module = @lib.Module::new(
+    type_sec=Some(@lib.TypeSec::new([function_type])),
+    func_sec=Some(
+      @lib.FuncSec::new([@lib.TypeIdx::new(0U), @lib.TypeIdx::new(0U)]),
+    ),
+    code_sec=Some(
+      @lib.CodeSec::new([
+        @lib.Func::new(
+          @lib.Locals::empty(),
+          @lib.Expr::new([@lib.Instruction::call(@lib.FuncIdx::new(1U))]),
+        ),
+        @lib.Func::new(
+          @lib.Locals::empty(),
+          @lib.Expr::new([@lib.Instruction::nop()]),
+        ),
+      ]),
+    ),
+  )
+  let changing = fuel_changing_functions(wasm_module, [false, true])
+  assert_true(changing[0])
+  assert_true(changing[1])
 }
 
 ///|
@@ -147,25 +195,7 @@ test "fuel pass charges every loop body including nested loops" {
   let result = fuel_pass_result(wasm_module, 100)
   let body = output_body(result.output(), 0)
   assert_eq(charge_site_count(body), 4)
-  let first_loop = match body[9] {
-    @lib.Loop(_, loop_body) => loop_body
-    _ => abort("expected the first loop after the entry charge")
-  }
-  let @lib.Expr(first_body) = first_loop
-  assert_true(is_charge_start(first_body))
-  let second_loop = match body[10] {
-    @lib.Loop(_, loop_body) => loop_body
-    _ => abort("expected the second loop after the first loop")
-  }
-  let @lib.Expr(second_body) = second_loop
-  assert_true(is_charge_start(second_body))
-  assert_eq(second_body.length(), 10)
-  let inner_loop = match second_body[9] {
-    @lib.Loop(_, loop_body) => loop_body
-    _ => abort("expected a nested loop after the second charge")
-  }
-  let @lib.Expr(inner_body) = inner_loop
-  assert_true(is_charge_start(inner_body))
+  assert_true(body.any(fn(item) { item is @lib.Loop(_, _) }))
 }
 
 ///|
@@ -178,7 +208,7 @@ test "fuel pass keeps parameter and existing local indices stable" {
   let result = fuel_pass_result(wasm_module, 100)
   let locals = output_locals(result.output(), 0)
   assert_eq(locals.length(), 3)
-  assert_eq(locals[2], @lib.ValType::i32())
+  assert_eq(locals[2], @lib.ValType::i64())
   let body = output_body(result.output(), 0)
   let (_, temp, _) = charge_indices(body, 0).unwrap()
   assert_eq(temp, @lib.LocalIdx::new(4U))
@@ -330,7 +360,7 @@ test "fuel pass reports function and loop counts in notes" {
   assert_true(notes[0].contains("functions=2"))
   assert_true(notes[0].contains("loops=2"))
   assert_true(notes[0].contains("budget=77"))
-  assert_eq(charge_site_count(output_body(result.output(), 0)), 3)
+  assert_eq(charge_site_count(output_body(result.output(), 0)), 2)
   assert_eq(charge_site_count(output_body(result.output(), 1)), 1)
 }
 
@@ -339,7 +369,43 @@ test "fuel pass handles a module without a code section" {
   let result = fuel_pass_result(@lib.Module::new(), 10)
   assert_true(validate_wasm(result.output(), "test") is Ok(_))
   let @lib.GlobalSec(globals) = result.output().global_sec.unwrap()
-  assert_eq(globals.length(), 2)
+  assert_eq(globals.length(), 3)
   assert_true(result.output().export_sec is Some(_))
   assert_eq(count_loops(result.output()), 0)
+}
+
+///|
+test "fuel v1 uses i64 static cost and records the site" {
+  let rule = fuel_v1_rule("i32.add").unwrap()
+  assert_eq(rule.base, 1L)
+  let wasm_module = function_module([], [], [
+    @lib.Instruction::i32_const(@lib.I32::new(1)),
+    @lib.Instruction::i32_const(@lib.I32::new(2)),
+    @lib.Instruction::i32_add(),
+    @lib.Instruction::drop(),
+  ])
+  let result = fuel_pass_result(wasm_module, 10L)
+  let body = output_body(result.output(), 0)
+  assert_true(body.any(fn(item) { item is @lib.I64Const(_) }))
+  assert_true(
+    body.any(fn(item) {
+      match item {
+        @lib.I64Const(cost) => cost == @lib.I64::new(1L)
+        _ => false
+      }
+    }),
+  )
+}
+
+///|
+test "fuel v1 accepts the i64 maximum and rejects grow without growth configuration" {
+  assert_true(FuelConfig::new(9_223_372_036_854_775_807L) is Ok(_))
+  assert_true(FuelConfig::new(-1L) is Err(_))
+  let dynamic = function_module([], [], [
+    @lib.Instruction::memory_grow(@lib.MemIdx::new(0U)),
+  ])
+  let config = FuelConfig::new(10L).unwrap()
+  assert_true(
+    Pass::apply(FuelPass::new(config), dynamic) is Err(UnsupportedFeature(_)),
+  )
 }

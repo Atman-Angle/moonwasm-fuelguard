@@ -14,8 +14,18 @@ pub fn FuelPass::config(self : Self) -> FuelConfig {
 }
 
 ///|
-impl Pass for FuelPass with fn apply(self, wasm_module) {
-  apply_fuel(self.config, wasm_module)
+pub impl Pass for FuelPass with fn apply(self, wasm_module) {
+  let semantic = analyze_semantic(wasm_module)
+  let plan = plan_fuel(semantic, None, wasm_module)
+  match plan_growth(wasm_module, semantic, None, plan) {
+    Err(error) => return Err(error)
+    Ok(_) => ()
+  }
+  match emit_fuel(self.config, wasm_module, plan, semantic.sites.length()) {
+    Ok((state, note)) =>
+      Ok(PassResult::new("FuelPass", state.wasm_module, notes=[note]))
+    Err(error) => Err(error)
+  }
 }
 
 ///|
@@ -34,7 +44,7 @@ pub fn GuardPass::config(self : Self) -> GuardConfig {
 }
 
 ///|
-impl Pass for GuardPass with fn apply(self, wasm_module) {
+pub impl Pass for GuardPass with fn apply(self, wasm_module) {
   let config = self.config
   if config.max_memory_pages() is None &&
     config.max_table_elements() is None &&
@@ -48,3 +58,9 @@ impl Pass for GuardPass with fn apply(self, wasm_module) {
     Err(NotImplemented("GuardPass"))
   }
 }
+
+///|
+pub extend FuelPass with Pass::{apply}
+
+///|
+pub extend GuardPass with Pass::{apply}

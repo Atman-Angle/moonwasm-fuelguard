@@ -1,0 +1,7 @@
+#!/bin/sh
+# Set glibc's allocator parameters before the Moonrun process starts.
+export MALLOC_ARENA_MAX=1
+export MALLOC_TRIM_THRESHOLD_=16384
+export MALLOC_MMAP_THRESHOLD_=16384
+
+exec moonrun "$(dirname -- "$0")/instrument.wasm" -- "$@"

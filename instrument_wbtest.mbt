@@ -32,6 +32,10 @@ test "trap codes round trip" {
   assert_eq(TrapCode::Fuel.to_code(), 1)
   assert_eq(TrapCode::Memory.to_code(), 2)
   assert_eq(TrapCode::Table.to_code(), 3)
+  assert_eq(TrapCode::Stack.to_code(), 4)
+  assert_eq(TrapCode::Depth.to_code(), 5)
+  assert_true(TrapCode::from_code(4) is Ok(Stack))
+  assert_true(TrapCode::from_code(5) is Ok(Depth))
 }
 
 ///|
@@ -40,30 +44,28 @@ test "unknown trap code is rejected" {
 }
 
 ///|
-test "builtin pipeline passes an unconfigured guard pass" {
+test "fuel-growth compatibility pipeline accepts no resources" {
   let fuel = FuelConfig::new(100).unwrap()
   let guards = GuardConfig::new().unwrap()
   let pipeline : Pipeline = Pipeline::builtin(
-    InstrumentConfig::new(fuel, guards),
+    InstrumentConfig::new(fuel, guards, profile=FuelGrowthV1),
   )
   let result = pipeline.run(@lib.Module::new()).unwrap()
   assert_true(validate_wasm(result.output(), "test") is Ok(_))
   assert_true(has_export(result.output(), trap_export_name))
   let notes = result.notes()
   assert_true(notes.any(fn(note) { note.contains("functions=0") }))
-  assert_true(notes.any(fn(note) { note.contains("guard: disabled") }))
+  assert_true(notes.any(fn(note) { note.contains("growth: helpers=0") }))
 }
 
 ///|
-test "builtin pipeline rejects a configured guard pass" {
+test "builtin pipeline accepts configured growth limits without a resource" {
   let fuel = FuelConfig::new(100).unwrap()
   let guards = GuardConfig::new(max_memory_pages=Some(16)).unwrap()
   let pipeline : Pipeline = Pipeline::builtin(
-    InstrumentConfig::new(fuel, guards),
+    InstrumentConfig::new(fuel, guards, profile=FuelGrowthV1),
   )
-  assert_true(
-    pipeline.run(@lib.Module::new()) is Err(NotImplemented("GuardPass")),
-  )
+  assert_true(pipeline.run(@lib.Module::new()) is Ok(_))
 }
 
 ///|
@@ -460,8 +462,9 @@ test "function local counts include parameters and body locals" {
     [@lib.ValType::i32(), @lib.ValType::i32(), @lib.ValType::f64()],
     [],
   )
-  assert_eq(function_param_count(wasm_module, 0), 2)
-  assert_eq(function_body_local_count(wasm_module, 0), 3)
+  let facts = analyze_semantic(wasm_module).functions[0]
+  assert_eq(facts.parameter_count, 2)
+  assert_eq(facts.local_count, 3)
 }
 
 ///|
@@ -484,44 +487,43 @@ test "type group flattening finds the referenced function type" {
       ]),
     ),
   )
-  assert_eq(function_param_count(wasm_module, 0), 1)
+  assert_eq(analyze_semantic(wasm_module).functions[0].parameter_count, 1)
 }
 
 ///|
-test "local counts are zero for missing functions" {
-  assert_eq(function_param_count(@lib.Module::new(), 0), 0)
-  assert_eq(function_body_local_count(@lib.Module::new(), 0), 0)
-  assert_eq(function_body_local_count(function_module([], [], []), 3), 0)
+test "analysis of an empty module has no function facts" {
+  assert_eq(analyze_semantic(@lib.Module::new()).functions.length(), 0)
 }
 
 ///|
-test "fuel state appends mutable i32 globals with configured budget" {
+test "fuel state appends mutable i64 budget and diagnostics globals" {
   let state = add_fuel_state(@lib.Module::new(), 100).unwrap()
   let @lib.GlobalSec(globals) = state.wasm_module.global_sec.unwrap()
-  assert_eq(globals.length(), 2)
+  assert_eq(globals.length(), 3)
   let @lib.Global(
     @lib.GlobalType(fuel_type, fuel_mutable),
-    @lib.Expr(fuel_init)
+    @lib.Expr(fuel_init),
   ) = globals[0]
-  assert_eq(fuel_type, @lib.ValType::i32())
+  assert_eq(fuel_type, @lib.ValType::i64())
   assert_true(fuel_mutable)
-  assert_eq(fuel_init, [@lib.Instruction::i32_const(@lib.I32::new(100))])
+  assert_eq(fuel_init, [@lib.Instruction::i64_const(@lib.I64::new(100L))])
   let @lib.Global(
     @lib.GlobalType(trap_type, trap_mutable),
-    @lib.Expr(trap_init)
+    @lib.Expr(trap_init),
   ) = globals[1]
   assert_eq(trap_type, @lib.ValType::i32())
   assert_true(trap_mutable)
   assert_eq(trap_init, [@lib.Instruction::i32_const(@lib.I32::new(0))])
   assert_eq(state.fuel_global, @lib.GlobalIdx::new(0U))
   assert_eq(state.trap_global, @lib.GlobalIdx::new(1U))
+  assert_eq(state.trap_site_global, @lib.GlobalIdx::new(2U))
 }
 
 ///|
 test "fuel state exports the trap code global under the reserved name" {
   let state = add_fuel_state(@lib.Module::new(), 10).unwrap()
   let @lib.ExportSec(exports) = state.wasm_module.export_sec.unwrap()
-  assert_eq(exports.length(), 1)
+  assert_eq(exports.length(), 2)
   let @lib.Export(name, index) = exports[0]
   assert_eq(name, @lib.Name::from_string(trap_export_name))
   let global = match index {
@@ -578,7 +580,7 @@ test "fuel state indices account for imported globals" {
   }
   assert_eq(global, @lib.GlobalIdx::new(2U))
   let @lib.GlobalSec(globals) = state.wasm_module.global_sec.unwrap()
-  assert_eq(globals.length(), 2)
+  assert_eq(globals.length(), 3)
   assert_true(validate_wasm(state.wasm_module, "test") is Ok(_))
 }
 
@@ -606,9 +608,9 @@ test "fuel state keeps existing globals and exports" {
   assert_eq(state.fuel_global, @lib.GlobalIdx::new(1U))
   assert_eq(state.trap_global, @lib.GlobalIdx::new(2U))
   let @lib.GlobalSec(globals) = state.wasm_module.global_sec.unwrap()
-  assert_eq(globals.length(), 3)
+  assert_eq(globals.length(), 4)
   let @lib.ExportSec(exports) = state.wasm_module.export_sec.unwrap()
-  assert_eq(exports.length(), 2)
+  assert_eq(exports.length(), 3)
   assert_true(has_export(state.wasm_module, "answer"))
   assert_true(has_export(state.wasm_module, trap_export_name))
 }

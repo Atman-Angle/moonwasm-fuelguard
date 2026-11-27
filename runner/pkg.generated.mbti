@@ -6,14 +6,24 @@ import {
 }
 
 // Values
+pub fn diagnose_instance_trap(Int32, Int32, String) -> RunFailure
+
 pub fn diagnose_trap_code(Int32) -> Result[RunFailure, @moonwasm-fuelguard.InstrumentError]
 
 // Errors
 
 // Types and methods
-pub enum RunFailure {
+pub(all) enum RunFailure {
   Trap(@moonwasm-fuelguard.TrapCode)
   ModuleTrap
+  ResourceTrap(@moonwasm-fuelguard.TrapCode, Int32)
+  NativeTrap(String)
+  ExecutionError(String)
+  DiagnosticError(String)
+  InitializationFailure(String)
+  TimedOut(String)
+  Cancelled(String)
+  WasiExit(Int32)
   HostError(String)
   InputError(String)
 }

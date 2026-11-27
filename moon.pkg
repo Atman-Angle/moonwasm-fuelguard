@@ -2,4 +2,6 @@ import {
   "jtenner/starshine/binary",
   "jtenner/starshine/lib",
   "jtenner/starshine/validate",
+  "moonbitlang/core/encoding/utf8",
+  "moonbitlang/x/crypto",
 }

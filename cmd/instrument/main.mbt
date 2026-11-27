@@ -4,31 +4,62 @@ fn print_usage() -> Unit {
   println("")
   println("Usage:")
   println("  instrument <in.wasm> -o <out.wasm> --fuel <N>")
-  println("             [--max-memory-pages <N>]")
-  println("             [--max-table-elements <N>]")
-  println("             [--allow-import <module.name>]...")
-  println("")
-  println("Diagnostic export: \{@core.trap_export_name}")
+  println("             [--profile production-v1|fuel-growth-v1|legacy]")
   println(
-    "Status: fuel-only instrumentation; GuardPass configuration and run are not implemented.",
+    "             [--max-stack-units <N> --max-call-depth <N>] (1..=2147483647 each)",
   )
+  println("             [--stack-layout] [--max-memory-pages <N>]")
+  println("             [--max-table-elements <N>]")
+  println(
+    "             [--allow-import <module.name>]... [--report <manifest.json>]",
+  )
+  println("  instrument verify <out.wasm> --report <manifest.json>")
+  println("  --allow-import-pair <module> <field> permits an exact import pair")
+  println(
+    "  instrument resolve-site <in.wasm> <out.wasm> --report <manifest.json> <site>",
+  )
+  println("")
+  println(
+    "Diagnostics: \{@core.trap_export_name} and \{@core.trap_site_export_name}",
+  )
+  println(
+    "--report writes the versioned configuration and input/output SHA-256.",
+  )
+  println("Choose new output and manifest paths. Existing files are rejected.")
+  println(
+    "Default profile: production-v1, requiring both stack and depth limits.",
+  )
+  println("Production uses the fuel-v2 model and layout.")
+  println("Specify an explicit limit for every memory or table in the input.")
+  println("Indirect calls require a fixed internal funcref table.")
+  println("Use --profile fuel-growth-v1 for earlier Fuel/Growth commands.")
 }
 
 ///|
-fn main_impl(args : Array[String]) -> Int32 {
+async fn main_impl(args : Array[String]) -> Int32 noraise {
   if args.length() == 0 {
     print_usage()
     return 2
   }
   match args[0] {
     "help" | "--help" | "-h" => {
+      if args.length() != 1 {
+        println("instrument: help must be used alone")
+        return 2
+      }
       print_usage()
       0
     }
     "--version" => {
-      println("0.1.0")
+      if args.length() != 1 {
+        println("instrument: --version must be used alone")
+        return 2
+      }
+      println(TOOL_VERSION)
       0
     }
+    "verify" if !args.contains("-o") => verify_delivery_command(args)
+    "resolve-site" if !args.contains("-o") => resolve_site_command(args)
     _ =>
       match parse_args(args) {
         Ok(options) =>
@@ -70,7 +101,7 @@ fn wasm_exit(code : UInt32) -> Unit = "wasi_snapshot_preview1" "proc_exit"
 
 ///|
 #cfg(target="wasm")
-fn main {
+async fn main {
   let code = main_impl(trim_program_name(@env.args()))
   if code != 0 {
     wasm_exit(code.reinterpret_as_uint())
@@ -83,7 +114,7 @@ extern "c" fn native_exit(code : Int32) -> Unit = "quick_exit"
 
 ///|
 #cfg(target="native")
-fn main {
+async fn main {
   let code = main_impl(trim_program_name(@env.args()))
   if code != 0 {
     native_exit(code)

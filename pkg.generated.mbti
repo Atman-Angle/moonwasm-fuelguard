@@ -3,96 +3,321 @@ package "Atman-Angle/moonwasm-fuelguard"
 
 import {
   "jtenner/starshine/lib",
+  "moonbitlang/core/json",
 }
 
 // Values
+pub const BUILTIN_CODEGEN_VERSION : String = "inline-per-instruction-v1"
+
+pub const CACHED_JOIN_CODEGEN_VERSION : String = "join-span-packed-cache-v1"
+
+pub const COMPACT_JOIN_CODEGEN_VERSION : String = "join-span-compact-v1"
+
+pub const COMPACT_JOIN_V2_CODEGEN_VERSION : String = "join-span-compact-v2"
+
+pub const FUEL_V2_CODEGEN_VERSION : String = "fuel-v2-inline-v1"
+
+pub const FUEL_V2_SPAN_SECTION : String = "fuelguard.fuel-v2-spans-v1"
+
+pub const FUEL_V2_VERSION : String = "fuel-v2"
+
+pub const GROWTH_MODEL_VERSION : String = "growth-v1"
+
+pub const HYBRID_CODEGEN_VERSION : String = "p2-hybrid-loop-inline-sites21-v1"
+
+pub const JOIN_CODEGEN_VERSION : String = "join-span-debit-first-v1"
+
+pub const JOIN_FUEL_VERSION : String = "fuel-v1.2"
+
+pub const JOIN_SPAN_LIMIT : Int32 = 19
+
+pub const PREFIX_CODEGEN_VERSION : String = "p2-prefix-exact-v1"
+
+pub const PRODUCTION_MAX_INPUT_BYTES : Int64 = 4_194_304
+
+pub const SHARED_CODEGEN_VERSION : String = "p1-helper-v1"
+
+pub fn analyze_semantic(@lib.Module, stage? : (String) -> Unit) -> SemanticPlan
+
 pub fn check_input(@lib.Module) -> Result[Unit, InstrumentError]
+
+pub fn check_production_input(@lib.Module, GuardConfig) -> Result[Unit, InstrumentError]
 
 pub fn decode_checked(Bytes) -> Result[@lib.Module, InstrumentError]
 
+pub fn decode_input(Bytes, InputProfile, stage? : (String) -> Unit) -> Result[@lib.Module, InstrumentError]
+
 pub fn decode_wasm(Bytes) -> Result[@lib.Module, InstrumentError]
 
-pub fn encode_wasm(@lib.Module) -> Result[Bytes, InstrumentError]
+pub let diagnostics_abi_version : String
+
+pub fn encode_wasm(@lib.Module, stage? : (String) -> Unit) -> Result[Bytes, InstrumentError]
+
+pub fn finalize_stack_layout(@lib.Module, @lib.Module, stage? : (String) -> Unit) -> Result[Array[StackLayout], InstrumentError]
+
+pub fn fuel_v1_rule(String) -> FuelV1Rule?
+
+pub let fuel_v1_version : String
+
+pub fn plan_instrumentation(SemanticPlan) -> InstrumentPlan
+
+pub fn preflight_production_wasm(Bytes) -> Result[Unit, InstrumentError]
+
+pub fn resolve_production_site(@lib.Module, Int32) -> Result[DiagnosticSite?, InstrumentError]
+
+pub let stack_model_version : String
 
 pub let trap_export_name : String
 
+pub let trap_site_export_name : String
+
 pub fn validate_wasm(@lib.Module, String) -> Result[Unit, InstrumentError]
+
+pub fn verify_builtin_artifact(Bytes, InputProfile, codegen? : CodegenLayout, stack_model? : String) -> Result[Unit, InstrumentError]
+
+pub fn verify_fuel_v2_spans(@lib.Module, Int64) -> Result[Unit, String]
+
+pub fn verify_production_artifact(Bytes) -> Result[Unit, InstrumentError]
 
 // Errors
 
 // Types and methods
-pub struct FuelConfig {
-  budget : Int32
+pub(all) enum CodegenLayout {
+  P0
+  P1
+  P2
+  P2Prefix
+  JoinSpan
+  JoinSpanCached
+  JoinSpanCompact
+  JoinSpanCompactV2
+  FuelV2
 }
-pub fn FuelConfig::budget(Self) -> Int32
-pub fn FuelConfig::new(Int32) -> Result[Self, InstrumentError]
+pub fn CodegenLayout::fuel_model(Self) -> String
+pub fn CodegenLayout::version(Self) -> String
+
+pub(all) struct DiagnosticSite {
+  function_index : Int32
+  instruction_ordinal : Int32?
+  opcode : String?
+}
+
+pub struct FuelConfig {
+  budget : Int64
+}
+pub fn FuelConfig::budget(Self) -> Int64
+pub fn FuelConfig::new(Int64) -> Result[Self, InstrumentError]
 
 pub struct FuelPass {
   config : FuelConfig
 }
+pub fn FuelPass::apply(Self, @lib.Module) -> Result[PassResult, InstrumentError]
 pub fn FuelPass::config(Self) -> FuelConfig
 pub fn FuelPass::new(FuelConfig) -> Self
+pub impl Pass for FuelPass
+
+pub enum FuelV1Boundary {
+  Prefix
+  Barrier
+  Structure
+  Marker
+}
+
+pub(all) struct FuelV1Rule {
+  base : Int64
+  per_unit : Int64
+  boundary : FuelV1Boundary
+}
+pub fn FuelV1Rule::dynamic_surcharge(Self, UInt32) -> Int64?
+
+pub(all) struct FunctionFacts {
+  function_index : Int32
+  type_index : Int32
+  parameter_count : Int32
+  local_count : Int32
+  instruction_count : Int32
+  loop_count : Int32
+  max_control_depth : Int32
+  static_cost : Int64
+  instructions : Array[InstructionFact]
+}
+pub fn FunctionFacts::instructions(Self) -> Array[InstructionFact]
+
+pub(all) struct FunctionPlan {
+  function_index : Int32
+  signature_type_index : Int32
+  template_id : String
+  appended_local_count : Int32
+  output_capacity : Int32
+  site_ids : Array[Int32]
+}
 
 pub struct GuardConfig {
   max_memory_pages : Int32?
   max_table_elements : Int32?
-  allowed_imports : Array[String]
+  imports : Array[(String, String)]
 }
+pub fn GuardConfig::allowed_import_pairs(Self) -> Array[(String, String)]
 pub fn GuardConfig::allowed_imports(Self) -> Array[String]
 pub fn GuardConfig::max_memory_pages(Self) -> Int32?
 pub fn GuardConfig::max_table_elements(Self) -> Int32?
-pub fn GuardConfig::new(max_memory_pages? : Int32?, max_table_elements? : Int32?, allowed_imports? : Array[String]) -> Result[Self, InstrumentError]
+pub fn GuardConfig::new(max_memory_pages? : Int32?, max_table_elements? : Int32?, allowed_imports? : Array[String], allowed_import_pairs? : Array[(String, String)]) -> Result[Self, InstrumentError]
 
 pub struct GuardPass {
   config : GuardConfig
 }
+pub fn GuardPass::apply(Self, @lib.Module) -> Result[PassResult, InstrumentError]
 pub fn GuardPass::config(Self) -> GuardConfig
 pub fn GuardPass::new(GuardConfig) -> Self
+pub impl Pass for GuardPass
+
+pub(all) enum InputProfile {
+  ProductionV1
+  FuelGrowthV1
+  Legacy
+}
+
+pub(all) struct InstructionFact {
+  ordinal : Int32
+  depth : Int32
+  key : String
+  static_cost : Int64
+  dynamic : Bool
+  boundary : String
+}
 
 pub struct InstrumentConfig {
   fuel : FuelConfig
   guard_config : GuardConfig
+  profile : InputProfile
+  stack : StackConfig?
+  codegen : CodegenLayout
 }
+pub fn InstrumentConfig::codegen(Self) -> CodegenLayout
 pub fn InstrumentConfig::fuel(Self) -> FuelConfig
 pub fn InstrumentConfig::guard_config(Self) -> GuardConfig
-pub fn InstrumentConfig::new(FuelConfig, GuardConfig) -> Self
+pub fn InstrumentConfig::new(FuelConfig, GuardConfig, profile? : InputProfile, stack? : StackConfig?, codegen? : CodegenLayout) -> Self
+pub fn InstrumentConfig::profile(Self) -> InputProfile
+pub fn InstrumentConfig::stack_config(Self) -> StackConfig?
 
 pub enum InstrumentError {
-  InvalidFuelBudget(Int32)
+  InvalidFuelBudget(Int64)
   InvalidMemoryLimit(Int32)
   InvalidTableLimit(Int32)
+  ImportNotAllowed(String, String)
+  InputLimitExceeded(String, Int64, Int32)
+  InitialResourceLimit(String, UInt32, Int32)
   DecodeFailed(String)
   EncodeFailed(String)
   ValidationFailed(String, String)
   UnsupportedFeature(String)
   ExportNameConflict(String)
+  InvalidStackLimits(Int64, Int64)
+  StackAnalysisFailed(String)
+  PipelineAuditFailed(String)
   InvalidTrapCode(Int32)
   NotImplemented(String)
 }
 pub fn InstrumentError::message(Self) -> String
 
+pub(all) struct InstrumentPlan {
+  semantic : SemanticPlan
+  functions : Array[FunctionPlan]
+  added_function_count : Int32
+  added_global_count : Int32
+  first_added_function_index : Int32
+  first_added_global_index : Int32
+}
+
+pub(all) struct MeterSite {
+  id : Int32
+  function_index : Int32
+  first_ordinal : Int32
+  last_ordinal : Int32
+  static_cost : Int64
+  dynamic_rule : String?
+}
+
+pub(all) struct ModuleIndex {
+  type_count : Int32
+  imported_function_count : Int32
+  defined_function_count : Int32
+  function_type_indices : Array[Int32]
+  imported_global_count : Int32
+  defined_global_count : Int32
+  table_count : Int32
+  memory_count : Int32
+  export_function_indices : Array[Int32]
+  start_function_index : Int32?
+  element_function_indices : Array[Int32]
+}
+pub fn ModuleIndex::function_count(Self) -> Int32
+
 pub struct PassResult {
   pass_name : String
   output : @lib.Module
   notes : Array[String]
+  stack_layout : Array[StackLayout]
+  stages : Array[String]
+  manifest_details : @json.Json?
 }
-pub fn PassResult::new(String, @lib.Module, notes? : Array[String]) -> Self
+pub fn PassResult::manifest_details(Self) -> @json.Json?
+pub fn PassResult::new(String, @lib.Module, notes? : Array[String], stack_layout? : Array[StackLayout], stages? : Array[String], manifest_details? : @json.Json?) -> Self
 pub fn PassResult::notes(Self) -> Array[String]
 pub fn PassResult::output(Self) -> @lib.Module
 pub fn PassResult::pass_name(Self) -> String
+pub fn PassResult::stack_layout(Self) -> Array[StackLayout]
+pub fn PassResult::stages(Self) -> Array[String]
 
 pub struct Pipeline {
   passes : Array[&Pass]
+  config : InstrumentConfig?
 }
 pub fn Pipeline::builtin(InstrumentConfig) -> Self
 pub fn Pipeline::new(Array[&Pass]) -> Self
-pub fn Pipeline::run(Self, @lib.Module) -> Result[PassResult, InstrumentError]
+pub fn Pipeline::plan(Self, @lib.Module) -> Result[InstrumentPlan, InstrumentError]
+pub fn Pipeline::run(Self, @lib.Module, manifest? : Bool, fuel_only? : Bool, stage? : (String) -> Unit) -> Result[PassResult, InstrumentError]
+
+pub(all) struct SemanticPlan {
+  version : String
+  module_index : ModuleIndex
+  functions : Array[FunctionFacts]
+  sites : Array[MeterSite]
+}
+pub fn SemanticPlan::sites(Self) -> Array[MeterSite]
+
+pub struct StackConfig {
+  max_units : Int64
+  max_depth : Int64
+}
+pub fn StackConfig::new(Int64, Int64) -> Result[Self, InstrumentError]
+
+pub(all) struct StackFrameCost {
+  parameters : Int64
+  results : Int64
+  locals : Int64
+  operands : Int64
+  fixed : Int64
+}
+
+pub(all) struct StackLayout {
+  function_index : Int32
+  source_frame : StackFrameCost?
+  final_frame : StackFrameCost
+  auxiliary_peak : Int64
+  shared_cost : Int64
+  actual_cost : Int64
+  within_shared_cost : Bool
+  entry_wrapper : Bool
+}
 
 pub enum TrapCode {
   NoTrap
   Fuel
   Memory
   Table
+  Stack
+  Depth
 }
 pub fn TrapCode::from_code(Int32) -> Result[Self, InstrumentError]
 pub fn TrapCode::message(Self) -> String

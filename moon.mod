@@ -1,6 +1,6 @@
 name = "Atman-Angle/moonwasm-fuelguard"
 
-version = "0.1.0"
+version = "0.2.0"
 
 readme = "README.md"
 
@@ -16,4 +16,6 @@ description = "Build-time fuel metering and resource guards for MoonBit WebAssem
 
 import {
   "jtenner/starshine@0.3.0",
+  "moonbitlang/x@0.5.1",
+  "moonbitlang/async@0.22.4",
 }

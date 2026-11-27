@@ -101,5 +101,18 @@ pub fn check_input(wasm_module : @lib.Module) -> Result[Unit, InstrumentError] {
   if has_export(wasm_module, trap_export_name) {
     return Err(ExportNameConflict(trap_export_name))
   }
+  if has_export(wasm_module, trap_site_export_name) {
+    return Err(ExportNameConflict(trap_site_export_name))
+  }
+  for @lib.CustomSec(@lib.Name(name), _) in wasm_module.custom_secs {
+    if name.to_owned() == instrument_marker {
+      return Err(
+        UnsupportedFeature("already instrumented or unknown FuelGuard marker"),
+      )
+    }
+  }
   check_gc_types(wasm_module)
 }
+
+///|
+let instrument_marker : String = "fuelguard.instrumented"
