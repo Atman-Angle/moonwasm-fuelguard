@@ -3,8 +3,9 @@
 This project uses external packages through MoonBit package dependencies. The
 packages are not copied into this repository unless explicitly stated.
 
-## starshine 0.3.0
+## FuelGuard codec 0.1.0
 
+- Package: `Atman-Angle/fuelguard-codec@0.1.0`
 - Repository: https://github.com/jtenner/starshine-mb
 - Used for WebAssembly decoding, validation, encoding, and structured AST types.
 - Declared package license: Apache-2.0.
@@ -12,9 +13,8 @@ packages are not copied into this repository unless explicitly stated.
   module and Binaryen-derived portions under Apache-2.0. Follow the upstream
   `LICENSE` and `NOTICE` files rather than relying only on the package manifest.
 
-FuelGuard applies the published compatibility diff from
-[the compatibility patch](scripts/patches/starshine-0.3.0-moonbit-20261126.patch)
-to the local starshine sources. Retain upstream attribution for the modified sources.
+The codec package contains the pinned MoonBit 1.0 RC compatibility sources and
+retains upstream attribution for the modified sources.
 
 ## MoonBit libraries
 
@@ -34,5 +34,5 @@ manifests. The shared upstream license is in the
 The wasmoon archive also carries `wasi_http/wit/LICENSE.md`.
 
 The local Mooncakes source ZIP contains FuelGuard sources, its license and
-notices, and the starshine compatibility diff. The package manager obtains the
-third-party archives separately.
+notices. The package manager obtains the codec and other third-party archives
+separately.

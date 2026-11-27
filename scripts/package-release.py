@@ -16,7 +16,7 @@ ROOT_FILES = {"LICENSE", "NOTICE", "README.md",
               "THIRD_PARTY.md", "moon.mod", "moon.pkg", "pkg.generated.mbti"}
 REQUIRED = {"LICENSE", "NOTICE", "THIRD_PARTY.md", "moon.mod", "moon.pkg",
             "cmd/instrument/moon.pkg", "cmd/run/moon.mod", "scripts/fuelguard-instrument",
-            "scripts/prepare-dependencies.py", "scripts/patches/starshine-0.3.0-moonbit-20261126.patch",
+            "scripts/prepare-dependencies.py",
             "docs/install.md", "docs/cli.md", "docs/support.md", "docs/performance.md",
             "docs/reproduce.md", "docs/implementation/fuel-v1.md",
             "docs/implementation/fuel-v2.md", "docs/implementation/fuel-v2.sha256",
@@ -47,6 +47,8 @@ def stage_sources(stage):
         if path.parts[0] == "bench" and name == "bench/README.md":
             continue
         if path.parts[0] == "integration" and path.name == "README.md":
+            continue
+        if name == "scripts/patches/starshine-0.3.0-moonbit-20261126.patch":
             continue
         if path.parts[0] not in TREES and name not in ROOT_FILES and not (
                 len(path.parts) == 1 and path.suffix == ".mbt"):

@@ -122,7 +122,7 @@ def build_runner():
         shutil.copy2(binaries[0], runner)
     runtime.artifact("product-runner", runner)
     runtime.run("runner-version", [runner, "--version"], lambda rc, out, _:
-                rc == 0 and out == "FuelGuard run 0.2.0 (wasmoon 0.18.0)")
+                rc == 0 and out == "FuelGuard run 0.2.1 (wasmoon 0.18.0)")
     return runner
 
 

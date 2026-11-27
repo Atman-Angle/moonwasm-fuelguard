@@ -1,5 +1,5 @@
 ///|
-const TOOL_VERSION = "0.2.0"
+const TOOL_VERSION = "0.2.1"
 
 ///|
 const MANIFEST_SCHEMA = "fuelguard-manifest-v2"

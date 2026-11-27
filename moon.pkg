@@ -1,7 +1,7 @@
 import {
-  "jtenner/starshine/binary",
-  "jtenner/starshine/lib",
-  "jtenner/starshine/validate",
+  "Atman-Angle/fuelguard-codec/binary",
+  "Atman-Angle/fuelguard-codec/lib",
+  "Atman-Angle/fuelguard-codec/validate",
   "moonbitlang/core/encoding/utf8",
   "moonbitlang/x/crypto",
 }
