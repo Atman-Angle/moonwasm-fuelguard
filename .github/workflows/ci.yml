@@ -1,0 +1,77 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  wasm:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install MoonBit 1.0 RC
+        shell: bash
+        run: |
+          install_dir="$RUNNER_TEMP/fuelguard-moonbit"
+          archives=$(mktemp -d)
+          cd "$archives"
+          # Use the release channel as a fallback when the versioned URL is absent.
+          # Both URLs must deliver the same pinned archives.
+          download() {
+            curl --fail --silent --show-error --location "$1" --output "$3" ||
+              curl --fail --silent --show-error --location "$2" --output "$3"
+          }
+          download https://cli.moonbitlang.com/binaries/0.1.20261126/moonbit-linux-x86_64.tar.gz \
+            https://cli.moonbitlang.com/binaries/latest/moonbit-linux-x86_64.tar.gz moonbit.tar.gz
+          download https://cli.moonbitlang.com/cores/core-0.1.20261126.tar.gz \
+            https://cli.moonbitlang.com/cores/core-latest.tar.gz core.tar.gz
+          sha256sum --check <<'SHA256'
+          113527a9037fe12e463e6ac1e7698116bf703730243096328e4ac7e2774307c0  moonbit.tar.gz
+          a3f7d82f1195e28ad9aad7b9b8b4cbca490cbf8146b306a376ea3beba4173751  core.tar.gz
+          SHA256
+          mkdir -p "$install_dir/lib"
+          tar -xzf moonbit.tar.gz -C "$install_dir"
+          tar -xzf core.tar.gz -C "$install_dir/lib"
+          chmod +x "$install_dir"/bin/* "$install_dir/bin/internal/tcc"
+          export MOON_HOME="$install_dir"
+          export PATH="$install_dir/bin:$PATH"
+          moon -C "$install_dir/lib/core" bundle --all
+          echo "$MOON_HOME/bin" >> "$GITHUB_PATH"
+          echo "MOON_HOME=$MOON_HOME" >> "$GITHUB_ENV"
+      - name: Verify toolchain
+        run: |
+          moon version
+          moonc -v
+      - name: Prepare pinned dependencies
+        run: |
+          moon update
+          python3 -B scripts/prepare-dependencies.py . cmd/run
+      - name: Refresh generated interfaces
+        run: |
+          git diff --exit-code -- '*.mbti'
+          moon info
+          git diff --exit-code -- '*.mbti'
+          new_interfaces=$(git ls-files --others --exclude-standard -- '*.mbti')
+          if [[ -n "$new_interfaces" ]]; then
+            printf 'Untracked MoonBit interfaces:\n%s\n' "$new_interfaces"
+            exit 1
+          fi
+      - name: Check formatting
+        run: moon fmt --check
+      - name: Strict wasm check
+        run: moon check --frozen --target wasm --deny-warn
+      - name: Build wasm CLI
+        run: moon build --frozen --target wasm --release cmd/instrument
+      - name: Run tests
+        run: moon test --frozen --target wasm
+      - name: Run end-to-end fixture check
+        run: bash scripts/check-e2e.sh
+      - name: Check Linux runner
+        working-directory: cmd/run
+        run: moon check --frozen --target native --deny-warn
+      - name: Test Linux runner
+        working-directory: cmd/run
+        run: moon test --frozen --target native

@@ -1,0 +1,10 @@
+--- a/src/fs/fs.mbt
++++ b/src/fs/fs.mbt
+@@ -72,6 +72,6 @@
+   out : Array[String],
+ ) -> Result[Unit, String] {
+-  let entries = @xfs.read_dir(root) catch {
++  let mut entries = @xfs.read_dir(root) catch {
+     e => return Err("read_dir failed for \{root}: \{fs_error_message(e)}")
+   }
+   fs_sort_strings(entries)

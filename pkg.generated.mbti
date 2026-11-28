@@ -2,7 +2,7 @@
 package "Atman-Angle/moonwasm-fuelguard"
 
 import {
-  "Atman-Angle/fuelguard-codec/lib",
+  "jtenner/starshine/lib",
   "moonbitlang/core/json",
 }
 

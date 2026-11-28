@@ -81,6 +81,26 @@ test "guard pass returns the input module unchanged when disabled" {
 }
 
 ///|
+test "guard pass rejects configured limits outside the builtin pipeline" {
+  let config = GuardConfig::new(max_memory_pages=Some(16)).unwrap()
+  let guard_pass = GuardPass::new(config)
+  let wasm_module = @lib.Module::new()
+  assert_true(
+    Pass::apply(guard_pass, wasm_module) is Err(NotImplemented("GuardPass")),
+  )
+}
+
+///|
+test "guard pass rejects import allowlists outside the builtin pipeline" {
+  let config = GuardConfig::new(allowed_import_pairs=[("env", "run")]).unwrap()
+  let guard_pass = GuardPass::new(config)
+  let wasm_module = @lib.Module::new()
+  assert_true(
+    Pass::apply(guard_pass, wasm_module) is Err(NotImplemented("GuardPass")),
+  )
+}
+
+///|
 test "empty module passes input policy" {
   assert_true(check_input(@lib.Module::new()) is Ok(_))
 }

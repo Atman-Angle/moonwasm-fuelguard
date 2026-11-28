@@ -244,7 +244,7 @@ fn InputReader::expr(
             )
         }
       0xfd =>
-        // The production profile rejects all SIMD opcodes.
+        // S25: production-v1 refuses every SIMD opcode (docs/04 scope).
         match self.uleb() {
           sub if sub >= 256U =>
             raise Refused(UnsupportedFeature("relaxed SIMD opcode \{sub}"))

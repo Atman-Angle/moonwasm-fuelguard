@@ -1,6 +1,7 @@
-# Fuel v2 计费模型
+# fuel-v2 边界表
 
-静态权重和动态费用系数沿用无 SIMD 的 [Fuel v1](fuel-v1.md)
+[生产规格 v4 第 2.1 节](../14_FuelGuard生产规格_v4.md#21-fuelfuel-v2-计费模型)
+定义该模型。静态权重和动态费用系数沿用 SIMD-free fuel-v1 的
 `fuel_v1_rule` 表。初始预算为 `[1, 2^63−1]`。
 
 | 位置 | 划分规则 |
@@ -46,6 +47,6 @@ W 是 span 内静态权重之和。每条指令最多计 8，站点计数受 Int
 
 [模型指纹](fuel-v2.sha256) 为 `cost_model.mbt`、`join_fuel.mbt` 和
 本页内容按顺序用 NUL 分隔后计算的 SHA-256，采用 UTF-8 和 LF。
-旧模型指纹保留用于复现兼容布局的费用表。
+旧模型指纹保留用于复现 v4 迁移前的提交 `60100c2`。
 运行 `python -B -m unittest integration.fuel_oracle.test_fingerprint`
 验证当前指纹。

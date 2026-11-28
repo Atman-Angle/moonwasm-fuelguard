@@ -1,4 +1,4 @@
-"""Stage and verify the public Mooncakes source package."""
+"""Stage and verify a local Mooncakes package and its evidence files."""
 
 import argparse
 import hashlib
@@ -12,21 +12,11 @@ from zipfile import ZipFile
 
 ROOT = Path(__file__).resolve().parents[1]
 TREES = {"bench", "cmd", "docs", "fixtures", "integration", "runner", "scripts"}
-ROOT_FILES = {"LICENSE", "NOTICE", "README.md",
+ROOT_FILES = {"AGENTS.md", "CONTEXT.md", "LICENSE", "NOTICE", "README.md",
               "THIRD_PARTY.md", "moon.mod", "moon.pkg", "pkg.generated.mbti"}
 REQUIRED = {"LICENSE", "NOTICE", "THIRD_PARTY.md", "moon.mod", "moon.pkg",
             "cmd/instrument/moon.pkg", "cmd/run/moon.mod", "scripts/fuelguard-instrument",
-            "scripts/prepare-dependencies.py",
-            "docs/install.md", "docs/cli.md", "docs/support.md", "docs/performance.md",
-            "docs/reproduce.md", "docs/implementation/fuel-v1.md",
-            "docs/implementation/fuel-v2.md", "docs/implementation/fuel-v2.sha256",
-            "docs/implementation/stack-v2.md", "docs/implementation/manifest-v2.md"}
-PUBLIC_DOCS = {
-    "docs/install.md", "docs/cli.md", "docs/support.md", "docs/performance.md",
-    "docs/reproduce.md", "docs/implementation/fuel-v1.md",
-    "docs/implementation/fuel-v2.md", "docs/implementation/fuel-v2.sha256",
-    "docs/implementation/stack-v2.md", "docs/implementation/manifest-v2.md",
-}
+            "scripts/prepare-dependencies.py", "docs/04_项目申报书_v2.md"}
 EXCLUDED = {"_build", "target", "__pycache__", ".git", ".mooncakes", ".moonagent"}
 
 
@@ -41,14 +31,6 @@ def stage_sources(stage):
     for name in sorted(set(names.decode("utf-8").split("\0")) - {""}):
         path = Path(name)
         if EXCLUDED.intersection(path.parts) or path.name in {"64", "trace.json"}:
-            continue
-        if path.parts[0] == "docs" and name not in PUBLIC_DOCS:
-            continue
-        if path.parts[0] == "bench" and name == "bench/README.md":
-            continue
-        if path.parts[0] == "integration" and path.name == "README.md":
-            continue
-        if name == "scripts/patches/starshine-0.3.0-moonbit-20261126.patch":
             continue
         if path.parts[0] not in TREES and name not in ROOT_FILES and not (
                 len(path.parts) == 1 and path.suffix == ".mbt"):
@@ -65,7 +47,12 @@ def stage_sources(stage):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("out", type=Path, help="new release directory")
+    parser.add_argument("--evidence", type=Path, action="append", default=[],
+                        help="copy an evidence archive or report into the release directory")
     args = parser.parse_args()
+    inputs = [path.resolve(strict=True) for path in args.evidence]
+    if any(not path.is_file() for path in inputs) or len({path.name for path in inputs}) != len(inputs):
+        parser.error("evidence must be regular files with distinct names")
     out = args.out.resolve()
     if out.exists():
         parser.error("output directory already exists")
@@ -87,15 +74,13 @@ def main():
                 path = Path(name)
                 if EXCLUDED.intersection(path.parts) or path.name in {"64", "trace.json"}:
                     raise ValueError(f"unexpected release archive entry: {name}")
-            internal_markers = (
-                "docs/evidence/", "docs/prompts/", "docs/adr/", "docs/audit-",
-                "docs/project-status", ".scratch/", "AGENTS.md", "CONTEXT.md",
-                "项目申报书", "任务提示词",
-            )
-            if any(any(marker in name for marker in internal_markers) for name in entries):
-                raise ValueError("release archive contains internal project material")
         out.mkdir(parents=True)
         shutil.copy2(archive, out / archive.name)
+        if inputs:
+            evidence = out / "evidence"
+            evidence.mkdir()
+            for path in inputs:
+                shutil.copy2(path, evidence / path.name)
         files = sorted(path for path in out.rglob("*") if path.is_file())
         (out / "SHA256SUMS").write_text(
             "".join(f"{digest(path)}  {path.relative_to(out).as_posix()}\n" for path in files),

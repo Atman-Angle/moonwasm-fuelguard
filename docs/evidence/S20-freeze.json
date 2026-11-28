@@ -1,0 +1,60 @@
+{
+  "slice": "S20",
+  "recorded_at": "2026-11-18T09:19:54+08:00",
+  "dataset": {
+    "path": "bench/dataset.json",
+    "sha256": "de53b10ea85e3d714112fe46873135f563a58fa870b65bc40665b5efff37faa7",
+    "selection_split": "tuning",
+    "holdout_executions": 0
+  },
+  "hybrid": {
+    "version": "p2-hybrid-loop-inline-sites21-v1",
+    "min_positive_static_sites": 21,
+    "require_loop_free_function": true,
+    "growth_uses_shared_charge_when_present": true,
+    "provenance": {
+      "method": "lower median over positive site counts in loop-free tuning application functions",
+      "functions": 560,
+      "s19_p1_sidecar_sha256": {
+        "F0-hello": "3515f95df8179f4acb13ed20ca71074c6b0d70bce26251fae18c582d7c384973",
+        "F1-json": "0905ed09a48a7c9c720fce3f2553e539b447054bc8efcb55d96b5b8ce0f92685",
+        "F2-lisp": "b2373494a07fd2aee3bc04f703a37c34592a00054234d8f33ce25903ad38404e",
+        "F3-sha256": "bee33ae4a55b753b3f132cfb026ed4d7253494718328f5481e6f0dda62b5326e"
+      }
+    }
+  },
+  "source": {
+    "head": "b6a4783",
+    "timed_source_map_sha256": "10a0340121cb7e205994cdd872d542023bf5fba019ddee7bff113a61887cdfbb",
+    "timed_source_map_encoding": "UTF-8 JSON sorted keys, compact separators, Unicode unescaped",
+    "fuel_pass.mbt": "68392dd24145852cf53f5d589d5c061f4bacfb2e97e2b3f9bbad5f6b02ebf5b8",
+    "pipeline.mbt": "bd3d31fe45d366c7d99085eee79b81ad4fdffad329158fed63463a31a6b99131"
+  },
+  "models": {
+    "fuel-v1-fingerprint": "023d16290ad9842c12d72205609ae7b7c478b11c43c9981363a2b5ee69727ab8",
+    "stack-v1-contract-sha256": "ecf3046007d6e588845552fabe3baaeaad78d5ebcde250ac5a2f8fc91eebc08f",
+    "implementation_sha256": {
+      "cost_model.mbt": "1be03d34c3d63d7b5057f0747267be54ddc848172bfb436168e067bd056b7c29",
+      "stack_analysis.mbt": "1256afd4c05daacb37ea525d9ba9a51e0355b2c073d89a47ca6d29bcb8c27674",
+      "growth_pass.mbt": "dbb0d0736119e4ea8b062210f6e2f16904b15fbb61a15e71c2489cf356c5b722",
+      "dynamic_cost.mbt": "774b20177b0643281d885fe4ae936cf99d0c79a16116795e1399270ebacfe788",
+      "trap.mbt": "3c02f59181d772623c9833f4660f51c24c987f959d0e77f90df3818f9305a8a0"
+    }
+  },
+  "construction_evidence_sha256": {
+    "environment.json": "cceedae1bd4893e2f610e0128b8dae4a0bc1db243c26ebfd89a6fa66aedbff52",
+    "volumes.json": "26482c7e2019dce3d6bc418af15b54264874c3b1931be8f7756285e0b55d875d",
+    "builds.json": "30672f17325de1ccfa64830523934d33a8428dd8ceb52ff0ad59ca60bf838f11"
+  },
+  "selection": {
+    "status": "BLOCKED",
+    "eligible": [],
+    "default": null,
+    "disqualified": {
+      "p0": ["A19", "A20"],
+      "p1": ["A19", "A20"],
+      "p2": ["A19", "A20"]
+    }
+  },
+  "s21": "NOT_RUN"
+}

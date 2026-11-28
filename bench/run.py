@@ -17,7 +17,7 @@ from pathlib import Path
 
 from dataset import (A17_HOLDOUT_MANIFEST, A17_HOLDOUT_SHA256, BENCH, DATASET_SHA256,
                      MANIFEST, ROOT, build_scale, check_start, sha256, write_json)
-from performance_evidence import (FROZEN_BINARIES, FROZEN_LAYOUT, FUEL_V2_VARIANTS, PERFORMANCE_PROTOCOL, cases_for,
+from performance_evidence import (FROZEN_BINARIES, FROZEN_LAYOUT, FUEL_V2_VARIANTS, PROPOSAL, cases_for,
                                   configuration_digest, evidence_scope, json_digest, size_status,
                                   source_hashes, timing_protocol, verify_candidate_lock,
                                   verify_holdout_run)
@@ -519,7 +519,7 @@ def main():
         if len(set([*history, opts.out.resolve()])) != len(history) + 1:
             parser.error("supplemental runs require distinct output directories")
     source = source_hashes()
-    proposal_sha256 = sha256(PERFORMANCE_PROTOCOL)
+    proposal_sha256 = sha256(PROPOSAL)
     if opts.holdout:
         archive = opts.candidate_run.resolve()
         freeze_sha = sha256(opts.candidate_lock)
@@ -662,8 +662,8 @@ def main():
         first_group = 0
     if not opts.build_only:
         measure(run, cases, workers, artifacts, protocol, opts.smoke, first_group, variants, cells)
-    if source_hashes() != source or sha256(PERFORMANCE_PROTOCOL) != proposal_sha256:
-        raise ValueError("source or performance protocol changed during the benchmark")
+    if source_hashes() != source or sha256(PROPOSAL) != proposal_sha256:
+        raise ValueError("source or proposal changed during the benchmark")
     write_json(run.out / "finished.json", dict(
         finish_utc_ns=time.time_ns(), load_after=os.getloadavg(),
         samples_sha256=None if opts.build_only else sha256(run.out / "samples.jsonl"),

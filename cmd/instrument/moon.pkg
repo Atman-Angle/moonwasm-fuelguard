@@ -1,7 +1,7 @@
 import {
   "Atman-Angle/moonwasm-fuelguard" @core,
-  "Atman-Angle/fuelguard-codec/fs",
-  "Atman-Angle/fuelguard-codec/lib",
+  "jtenner/starshine/fs",
+  "jtenner/starshine/lib",
   "moonbitlang/async",
   "moonbitlang/async/fs" @aio,
   "moonbitlang/async/os_error",

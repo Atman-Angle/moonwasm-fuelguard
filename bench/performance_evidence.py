@@ -10,7 +10,7 @@ if __package__:
 else:
     from dataset import FUEL_V2_DATASET_HASHES, ROOT, sha256
 
-PERFORMANCE_PROTOCOL = ROOT / "docs/reproduce.md"
+PROPOSAL = ROOT / "docs/04_项目申报书_v2.md"
 FUEL_V2_VARIANTS = ("original", "fuel", "fuel-v2")
 FROZEN_LAYOUT = "fuel-v2-inline-v1"
 FROZEN_BINARIES = {

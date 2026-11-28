@@ -438,7 +438,7 @@ priv struct FuelFunctionPlan {
 
 ///|
 // Frozen from the lower median of charged sites in loop-free tuning
-// application functions.
+// application functions. See docs/evidence/S20.md for provenance.
 const HYBRID_MIN_SITES : Int32 = 21
 
 ///|

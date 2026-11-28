@@ -1,13 +1,13 @@
 name = "Atman-Angle/fuelguard-run"
 
-version = "0.2.1"
+version = "0.2.2"
 
 preferred_target = "native"
 
 supported_targets = "native"
 
 import {
-  "Atman-Angle/moonwasm-fuelguard@0.2.1",
+  "Atman-Angle/moonwasm-fuelguard@0.2.2",
   "Milky2018/wasmoon@0.18.0",
   "Milky2018/wasm_core@0.18.0",
   "moonbitlang/x@0.5.5",

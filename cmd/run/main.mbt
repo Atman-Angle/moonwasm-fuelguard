@@ -117,7 +117,7 @@ fn main_impl(args : ArrayView[String]) -> Int32 {
       0
     }
     "--version" => {
-      println("FuelGuard run 0.2.1 (wasmoon 0.18.0)")
+      println("FuelGuard run 0.2.2 (wasmoon 0.18.0)")
       0
     }
     _ =>

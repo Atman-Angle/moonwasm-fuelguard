@@ -304,7 +304,7 @@ def main():
     runtime.run("version-validator", ["wasm-tools", "--version"],
                 lambda code, out, err: code == 0 and "1.263.0" in out)
     runtime.run("instrument-dependencies", ["moon", "tree"],
-                lambda code, out, err: code == 0 and "Milky2018" not in out and "fuelguard-codec@0.1.0" in out)
+                lambda code, out, err: code == 0 and "Milky2018" not in out and "starshine@0.3.0" in out)
     runtime.run("runner-dependencies", ["bash", "-c", 'cd cmd/run && exec moon tree'],
                 lambda code, out, err: code == 0 and "Milky2018/wasmoon@0.18.0" in out)
     stack.build_instrument("build-instrument")

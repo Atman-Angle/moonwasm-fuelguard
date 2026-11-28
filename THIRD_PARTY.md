@@ -3,9 +3,8 @@
 This project uses external packages through MoonBit package dependencies. The
 packages are not copied into this repository unless explicitly stated.
 
-## FuelGuard codec 0.1.0
+## starshine 0.3.0
 
-- Package: `Atman-Angle/fuelguard-codec@0.1.0`
 - Repository: https://github.com/jtenner/starshine-mb
 - Used for WebAssembly decoding, validation, encoding, and structured AST types.
 - Declared package license: Apache-2.0.
@@ -13,8 +12,12 @@ packages are not copied into this repository unless explicitly stated.
   module and Binaryen-derived portions under Apache-2.0. Follow the upstream
   `LICENSE` and `NOTICE` files rather than relying only on the package manifest.
 
-The codec package contains the pinned MoonBit 1.0 RC compatibility sources and
-retains upstream attribution for the modified sources.
+FuelGuard applies MoonBit RC compatibility patches to local starshine sources.
+The root and `x@0.5.1` workspaces use the 20261126 and 20261127 patches in
+sequence. The Linux runner uses the 20261126 and 20261128 patches because its
+`x@0.5.5` dependency returns `ArrayView[String]` from `read_dir`. The archived
+20261127 diff remains available for review. Retain upstream attribution for the
+modified sources.
 
 ## MoonBit libraries
 
@@ -34,5 +37,11 @@ manifests. The shared upstream license is in the
 The wasmoon archive also carries `wasi_http/wit/LICENSE.md`.
 
 The local Mooncakes source ZIP contains FuelGuard sources, its license and
-notices. The package manager obtains the codec and other third-party archives
-separately.
+notices, the starshine compatibility diff, and the applicable source-package
+notices for the checked-in WebAssembly fixtures. The fixed MoonBit RC core
+files are `docs/licenses/moonbit-core-NOTICE.txt` and
+`docs/licenses/moonbit-core-LICENSE.txt`. The pinned starshine source-package
+files are `docs/licenses/starshine-0.3.0-LICENSE.txt` and
+`docs/licenses/starshine-0.3.0-NOTICE.txt`. The package manager obtains the
+third-party archives separately, so those copies do not replace the complete
+dependency archives.

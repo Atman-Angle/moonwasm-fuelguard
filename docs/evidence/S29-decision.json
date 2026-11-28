@@ -1,0 +1,515 @@
+{
+  "schema": "fuelguard-s29-decision-v1",
+  "slice": "S29",
+  "recorded_at": "2026-11-20T01:10:28+08:00",
+  "git_head": "c2a7d162cf8c3d53deadf3bbff64fecbe7cd268b",
+  "branch": "feat/s29-layout-freeze",
+  "status": "BLOCKED",
+  "performance_eligible": [],
+  "frozen_default": null,
+  "s21": "NOT_RUN",
+  "dataset": {
+    "sha256": "ada027679aaab88d850b33e7129b5b5b9fbbcff2b2bc2e8316560b547aca8836",
+    "split": "tuning",
+    "holdout_executions": 0
+  },
+  "model_fingerprints": {
+    "fuel-v1": "62b7533437bfd237d31e708e8812a9354ee1563b9488adcd9bd1789ecac7f6a2",
+    "fuel-v1.2": "4702a622f932ade7d1a49032128ef9676b2e892751868ecdef001020b6b956e7",
+    "stack-v1-contract-sha256": "ecf3046007d6e588845552fabe3baaeaad78d5ebcde250ac5a2f8fc91eebc08f"
+  },
+  "limits": {
+    "A17_geomean_ci95_upper": 2.0,
+    "A17_individual_ci95_upper": 3.0,
+    "A19_cutoff_bytes": 10240,
+    "A19_larger_module_ratio": 2.0,
+    "A19_smaller_module_overhead_bytes": 10240,
+    "A20_largest_input_wall_ns": 10000000000,
+    "A20_largest_input_peak_rss_kib": 524288,
+    "A20_confirmed_regression_ratio": 1.05
+  },
+  "sampling": {
+    "initial_processes": 66,
+    "supplement_processes": 33,
+    "timed_samples_total": 267300,
+    "supplement_cells": [
+      [
+        "wasmoon",
+        "F0-hello",
+        "hot"
+      ],
+      [
+        "wasmoon",
+        "F0-hello",
+        "lifecycle"
+      ],
+      [
+        "wasmoon",
+        "F1-json",
+        "hot"
+      ],
+      [
+        "wasmoon",
+        "F1-json",
+        "lifecycle"
+      ],
+      [
+        "wasmoon",
+        "F2-lisp",
+        "hot"
+      ],
+      [
+        "wasmoon",
+        "F2-lisp",
+        "lifecycle"
+      ],
+      [
+        "wasmtime",
+        "F0-hello",
+        "hot"
+      ],
+      [
+        "wasmtime",
+        "F1-json",
+        "hot"
+      ],
+      [
+        "wasmtime",
+        "F1-json",
+        "lifecycle"
+      ],
+      [
+        "wasmtime",
+        "F2-lisp",
+        "hot"
+      ],
+      [
+        "wasmtime",
+        "F2-lisp",
+        "lifecycle"
+      ]
+    ],
+    "residual_borderline_cells": [
+      [
+        "wasmoon",
+        "F0-hello",
+        "hot"
+      ],
+      [
+        "wasmoon",
+        "F0-hello",
+        "lifecycle"
+      ],
+      [
+        "wasmoon",
+        "F1-json",
+        "hot"
+      ],
+      [
+        "wasmoon",
+        "F1-json",
+        "lifecycle"
+      ],
+      [
+        "wasmoon",
+        "F2-lisp",
+        "hot"
+      ],
+      [
+        "wasmoon",
+        "F2-lisp",
+        "lifecycle"
+      ],
+      [
+        "wasmtime",
+        "F1-json",
+        "hot"
+      ],
+      [
+        "wasmtime",
+        "F1-json",
+        "lifecycle"
+      ],
+      [
+        "wasmtime",
+        "F2-lisp",
+        "hot"
+      ],
+      [
+        "wasmtime",
+        "F2-lisp",
+        "lifecycle"
+      ]
+    ],
+    "runs": [
+      {
+        "directory": "initial",
+        "environment_sha256": "4b7a3f5b85f574db363894bd5898264c8bf45d1ae5c81ced6ccd1092b1c98666",
+        "samples_sha256": "94e23bc218892515e8351be531afe37247f87c5f805b7f84094052761adae46d"
+      },
+      {
+        "directory": "supplement-1",
+        "environment_sha256": "1c0145175d35437a4715aaf9706c58e14e5525c228dd6fd0260eff06c26a8f83",
+        "samples_sha256": "618b823dcb09f44789e0851274af4a0ce9e0951fd9102d788611a1ec46996938"
+      }
+    ]
+  },
+  "a20_repeat": {
+    "layout": "p2-prefix",
+    "result": "REGRESSION_NOT_REPRODUCED",
+    "baseline": "S26 frozen pilot",
+    "artifact_sha256": "b7d1f16243a2fab9e7f93a70699bc3502c020311e1658dc885096ced865c45c2",
+    "wall_median_ratio": 1.0316017588219892,
+    "rss_median_ratio": 1.003697117184575,
+    "s29_peak_rss_kib": 479972
+  },
+  "layouts": {
+    "p0": {
+      "codegen": "inline-per-instruction-v1",
+      "fuel_model": "fuel-v1",
+      "gates": {
+        "A17": "FAIL",
+        "A19": "FAIL",
+        "A20": "FAIL",
+        "A18": "PASS"
+      },
+      "a17_decisive_geomeans": [
+        {
+          "engine": "wasmoon",
+          "window": "hot",
+          "interval": {
+            "point": 5.79074951885709,
+            "low": 5.737599813439338,
+            "high": 5.8372258955777045
+          }
+        },
+        {
+          "engine": "wasmoon",
+          "window": "lifecycle",
+          "interval": {
+            "point": 7.2947686552289435,
+            "low": 7.237396355106638,
+            "high": 7.3638426042373215
+          }
+        },
+        {
+          "engine": "wasmtime",
+          "window": "hot",
+          "interval": {
+            "point": 3.3433653316370635,
+            "low": 3.3183617699993073,
+            "high": 3.368361966149609
+          }
+        },
+        {
+          "engine": "wasmtime",
+          "window": "lifecycle",
+          "interval": {
+            "point": 3.209359280893071,
+            "low": 3.1845868379832227,
+            "high": 3.236489144097316
+          }
+        }
+      ],
+      "a20_max_input": {
+        "max_input": "build-4096",
+        "time_limit_ns": 10000000000,
+        "rss_limit_kib": 524288,
+        "peak_wall_ns": 27252848487,
+        "peak_rss_kib": 1001652,
+        "status": "FAIL"
+      }
+    },
+    "p1": {
+      "codegen": "p1-helper-v1",
+      "fuel_model": "fuel-v1",
+      "gates": {
+        "A17": "FAIL",
+        "A19": "FAIL",
+        "A20": "FAIL",
+        "A18": "PASS"
+      },
+      "a17_decisive_geomeans": [
+        {
+          "engine": "wasmoon",
+          "window": "hot",
+          "interval": {
+            "point": 12.582962859941922,
+            "low": 12.464772168698943,
+            "high": 12.683467179203443
+          }
+        },
+        {
+          "engine": "wasmoon",
+          "window": "lifecycle",
+          "interval": {
+            "point": 11.992368721925098,
+            "low": 11.898036863314152,
+            "high": 12.125577940693725
+          }
+        },
+        {
+          "engine": "wasmtime",
+          "window": "hot",
+          "interval": {
+            "point": 16.180106093597715,
+            "low": 16.06422977005953,
+            "high": 16.296068413570875
+          }
+        },
+        {
+          "engine": "wasmtime",
+          "window": "lifecycle",
+          "interval": {
+            "point": 14.769788905822374,
+            "low": 14.66477473058675,
+            "high": 14.938555680969504
+          }
+        }
+      ],
+      "a20_max_input": {
+        "max_input": "build-4096",
+        "time_limit_ns": 10000000000,
+        "rss_limit_kib": 524288,
+        "peak_wall_ns": 6774383990,
+        "peak_rss_kib": 586192,
+        "status": "FAIL"
+      }
+    },
+    "p2": {
+      "codegen": "p2-hybrid-loop-inline-sites21-v1",
+      "fuel_model": "fuel-v1",
+      "gates": {
+        "A17": "FAIL",
+        "A19": "FAIL",
+        "A20": "FAIL",
+        "A18": "PASS"
+      },
+      "a17_decisive_geomeans": [
+        {
+          "engine": "wasmoon",
+          "window": "hot",
+          "interval": {
+            "point": 6.562527127788652,
+            "low": 6.498923939837132,
+            "high": 6.6152192470550855
+          }
+        },
+        {
+          "engine": "wasmoon",
+          "window": "lifecycle",
+          "interval": {
+            "point": 7.862459761971228,
+            "low": 7.796646586410897,
+            "high": 7.9626167122841505
+          }
+        },
+        {
+          "engine": "wasmtime",
+          "window": "hot",
+          "interval": {
+            "point": 4.617187351860861,
+            "low": 4.582575847893482,
+            "high": 4.657353441673254
+          }
+        },
+        {
+          "engine": "wasmtime",
+          "window": "lifecycle",
+          "interval": {
+            "point": 4.414067044287613,
+            "low": 4.38540804951073,
+            "high": 4.450329754179014
+          }
+        }
+      ],
+      "a20_max_input": {
+        "max_input": "build-4096",
+        "time_limit_ns": 10000000000,
+        "rss_limit_kib": 524288,
+        "peak_wall_ns": 6832236530,
+        "peak_rss_kib": 586656,
+        "status": "FAIL"
+      }
+    },
+    "p2-prefix": {
+      "codegen": "p2-prefix-exact-v1",
+      "fuel_model": "fuel-v1",
+      "gates": {
+        "A17": "FAIL",
+        "A19": "FAIL",
+        "A20": "PASS",
+        "A18": "PASS"
+      },
+      "a17_decisive_geomeans": [
+        {
+          "engine": "wasmoon",
+          "window": "hot",
+          "interval": {
+            "point": 2.470597690711504,
+            "low": 2.4472474426872184,
+            "high": 2.4882041252020337
+          }
+        },
+        {
+          "engine": "wasmoon",
+          "window": "lifecycle",
+          "interval": {
+            "point": 3.0048824665572873,
+            "low": 2.98180750299377,
+            "high": 3.035940626580068
+          }
+        },
+        {
+          "engine": "wasmtime",
+          "window": "hot",
+          "interval": {
+            "point": 2.3850759563328787,
+            "low": 2.370621654337354,
+            "high": 2.402462894363651
+          }
+        },
+        {
+          "engine": "wasmtime",
+          "window": "lifecycle",
+          "interval": {
+            "point": 2.3483148978960173,
+            "low": 2.3295203647187037,
+            "high": 2.3694685333667387
+          }
+        }
+      ],
+      "a20_max_input": {
+        "max_input": "build-4096",
+        "time_limit_ns": 10000000000,
+        "rss_limit_kib": 524288,
+        "peak_wall_ns": 3465567920,
+        "peak_rss_kib": 429212,
+        "status": "PASS"
+      }
+    },
+    "join-span": {
+      "codegen": "join-span-debit-first-v1",
+      "fuel_model": "fuel-v1.2",
+      "gates": {
+        "A17": "FAIL",
+        "A19": "FAIL",
+        "A20": "PASS",
+        "A18": "PASS"
+      },
+      "a17_decisive_geomeans": [
+        {
+          "engine": "wasmoon",
+          "window": "hot",
+          "interval": {
+            "point": 2.3994866123518124,
+            "low": 2.3829922268067287,
+            "high": 2.4184388001911605
+          }
+        },
+        {
+          "engine": "wasmoon",
+          "window": "lifecycle",
+          "interval": {
+            "point": 2.7746395345997836,
+            "low": 2.7493842838097353,
+            "high": 2.7983226329982354
+          }
+        },
+        {
+          "engine": "wasmtime",
+          "window": "hot",
+          "interval": {
+            "point": 2.168649733338815,
+            "low": 2.151269997564934,
+            "high": 2.1882967313715604
+          }
+        },
+        {
+          "engine": "wasmtime",
+          "window": "lifecycle",
+          "interval": {
+            "point": 2.114751011168044,
+            "low": 2.0972816009997506,
+            "high": 2.1329487348188136
+          }
+        }
+      ],
+      "a20_max_input": {
+        "max_input": "build-4096",
+        "time_limit_ns": 10000000000,
+        "rss_limit_kib": 524288,
+        "peak_wall_ns": 4788903238,
+        "peak_rss_kib": 507116,
+        "status": "PASS"
+      }
+    },
+    "join-span-cached": {
+      "codegen": "join-span-packed-cache-v1",
+      "fuel_model": "fuel-v1.2",
+      "gates": {
+        "A17": "FAIL",
+        "A19": "FAIL",
+        "A20": "FAIL",
+        "A18": "PASS"
+      },
+      "a17_decisive_geomeans": [
+        {
+          "engine": "wasmoon",
+          "window": "lifecycle",
+          "interval": {
+            "point": 2.0599563500367988,
+            "low": 2.0402763664444774,
+            "high": 2.080003242605749
+          }
+        }
+      ],
+      "a20_max_input": {
+        "max_input": "build-4096",
+        "time_limit_ns": 10000000000,
+        "rss_limit_kib": 524288,
+        "peak_wall_ns": 4816160519,
+        "peak_rss_kib": 525160,
+        "status": "FAIL"
+      }
+    },
+    "join-span-compact": {
+      "codegen": "join-span-compact-v1",
+      "fuel_model": "fuel-v1.2",
+      "gates": {
+        "A17": "FAIL",
+        "A19": "FAIL",
+        "A20": "PASS",
+        "A18": "PASS"
+      },
+      "a17_decisive_geomeans": [
+        {
+          "engine": "wasmoon",
+          "window": "lifecycle",
+          "interval": {
+            "point": 2.056679843010679,
+            "low": 2.0384599956055744,
+            "high": 2.076226321928877
+          }
+        }
+      ],
+      "a20_max_input": {
+        "max_input": "build-4096",
+        "time_limit_ns": 10000000000,
+        "rss_limit_kib": 524288,
+        "peak_wall_ns": 3650631452,
+        "peak_rss_kib": 436740,
+        "status": "PASS"
+      }
+    }
+  },
+  "evidence_sha256": {
+    "timed-source.tar": "600070876aecc3891fcaca6c50e0b87d1adfce1ab518583778dacf8dc2683568",
+    "before-source.tar": "ee90fda53c3477772f23bd20c1285b46c99319d144ca1c97e40abe580b681af5",
+    "initial-verified.json": "4c1324d09f186aa75cd0cc85de2c66310da766ad46668ed17628cd0dbf69d149",
+    "combined-1.json": "4a33192e2576b93355eaae7c5e2ae70d9d343da430075efb9d7484a3cd2733d4",
+    "a20-repeat-report.json": "5d96eccc38122fc2c590abe12fa2b690b178e3f8bc0aa14a1a4ff4d5cad4134c",
+    "s29-records.tar.gz": "3548330009d91055288301b8f19da0298b26a3501e4f5dac2185efcf43613934"
+  },
+  "decision_reference": "docs/09 §3"
+}

@@ -5,3 +5,11 @@ This product is licensed under the Apache License, Version 2.0.
 See LICENSE for the full license text.
 
 Third-party components and their licenses are listed in THIRD_PARTY.md.
+
+The source package retains the pinned MoonBit RC core notices alongside the
+checked-in WebAssembly fixtures. See
+`docs/licenses/moonbit-core-NOTICE.txt` and
+`docs/licenses/moonbit-core-LICENSE.txt`. It also includes the pinned
+starshine 0.3.0 source-package notices under
+`docs/licenses/starshine-0.3.0-LICENSE.txt` and
+`docs/licenses/starshine-0.3.0-NOTICE.txt`.

@@ -1,6 +1,6 @@
 name = "Atman-Angle/moonwasm-fuelguard"
 
-version = "0.2.1"
+version = "0.2.2"
 
 readme = "README.md"
 
@@ -15,7 +15,7 @@ preferred_target = "wasm"
 description = "Build-time fuel metering and resource guards for MoonBit WebAssembly modules"
 
 import {
-  "Atman-Angle/fuelguard-codec@0.1.0",
+  "jtenner/starshine@0.3.0",
   "moonbitlang/x@0.5.1",
   "moonbitlang/async@0.22.4",
 }
